@@ -1,0 +1,27 @@
+{
+  "name": "Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/home/python/workspace/",
+  "remoteUser": "python",
+  "mounts": [
+    "source=${localWorkspaceFolder},target=/home/python/workspace/,type=bind,consistency=cached",
+    "source=${env:HOME}/.ssh/config,target=/home/python/.ssh/config,type=bind,consistency=cached,readonly",
+    "source=/run/,target=/run/,type=bind",
+    "source=/dev/bus/usb/,target=/dev/bus/usb/,type=bind"
+  ],
+  "runArgs": [
+    "--device-cgroup-rule=a *:* mrw"
+  ],
+  "onCreateCommand": ".devcontainer/on_create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.black-formatter",
+        "njpwerner.autodocstring"
+      ]
+    }
+  }
+}

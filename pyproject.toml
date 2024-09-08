@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "sc-tools"
+version = "0.1.0"
+description = "Tools for exploration inside Smart Cards"
+authors = ["Reverse Engineering Freaks OSS Project"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    {include = "sc_tools"},
+    {include = "sc_explorer_cli"}
+]
+
+[tool.poetry.scripts]
+sc-explorer = "sc_explorer_cli.sc_explorer_cli:main"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fire = "^0.6.0"
+nfcpy = "^1.0.4"
+pyscard = "^2.0.10"
+tqdm = "^4.66.5"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
