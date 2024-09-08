@@ -114,8 +114,8 @@ class ScExplorerCli:
 
         message = ""
         if self.last_response_status is not None:
-            message += "SW:"
-            message += format(self.last_response_status.sw, "08X")
+            message += "SW: 0x"
+            message += format(self.last_response_status.sw, "04X")
             message += " ("
             message += self.last_response_status.status_type().name
             message += ")\n"

@@ -112,7 +112,7 @@ verify
 
 ```
 $ sc-explorer - select-df \"D392F000260100000001\" - select-ef \"0002\" - read-binary
-SW:00006B00 (OFFSET_SPECIFIED_OUT_OF_THE_EF_RANGE)
+SW: 0x6B00 (OFFSET_SPECIFIED_OUT_OF_THE_EF_RANGE)
 Data:
 0x00000000    30 82 05 14 30 82 03 FC A0 03 02 01 02 02 04 06    0...0...........
 0x00000010    7C 6A 21 30 0D 06 09 2A 86 48 86 F7 0D 01 01 0B    |j!0...*.H......
