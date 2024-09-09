@@ -132,9 +132,9 @@ class CardConnection:
 
         max_bulk_read_length = max_lc_le(self.allow_extended_apdu)
         status, data = self.read_binary(cla=cla, offset=0x0000, raise_error=raise_error)
-        offset = len(data)
-        # last_read_length = len(data)
-        while len(data) == max_bulk_read_length:
+        chunk_data = data
+        while len(chunk_data) == max_bulk_read_length:
+            offset = len(data)
             status, chunk_data = self.read_binary(
                 cla=cla, offset=offset, raise_error=False
             )
@@ -148,8 +148,6 @@ class CardConnection:
             if raise_error and status_type != CardResponseStatusType.NORMAL_END:
                 raise CardResponseError(status)
             data += chunk_data
-            offset += len(data)
-            # last_read_length = len(data)
         return status, data
 
     def read_record(
