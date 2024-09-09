@@ -435,11 +435,13 @@ class CardConnection:
 
 def create_card_connection(
     connection: PyscardCardConnection | Type4Tag,
+    allow_extended_apdu: bool = True,
 ) -> CardConnection:
     """Create Card Connection
 
     Args:
         connection (PyscardCardConnection | Type4Tag): PC/SC connection or NFC Type 4 Tag connection
+        allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to True.
 
     Returns:
         CardConnection: CardConnection instance
@@ -455,7 +457,7 @@ def create_card_connection(
             response_status = CardResponseStatus(sw)
             return response_status, bytes(data)
 
-        return CardConnection(transmit)
+        return CardConnection(transmit, allow_extended_apdu=allow_extended_apdu)
 
     elif isinstance(connection, Type4Tag):
 
@@ -467,4 +469,8 @@ def create_card_connection(
             response_status = CardResponseStatus(sw)
             return response_status, bytes(data)
 
-        return CardConnection(transmit, connection.identifier)
+        return CardConnection(
+            transmit,
+            allow_extended_apdu=allow_extended_apdu,
+            identifier=connection.identifier,
+        )

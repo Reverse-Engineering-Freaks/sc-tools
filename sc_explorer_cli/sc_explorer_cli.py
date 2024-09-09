@@ -49,12 +49,15 @@ class ScExplorerCli:
             format="[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s",
         )
 
-    def __init__(self, nfc=False, reader=0, log_level="INFO") -> None:
+    def __init__(
+        self, nfc=False, reader=0, allow_extended_apdu=True, log_level="INFO"
+    ) -> None:
         """Constructor
 
         Args:
             nfc (bool, optional): Use NFC reader. Defaults to False.
             reader (str | int, optional): Reader descriptor. Reader name or index in list. Defaults to 0.
+            allow_extended_apdu (bool, optional): Allow Extended APDU
             log_level (str, optional): Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
 
         Raises:
@@ -73,6 +76,8 @@ class ScExplorerCli:
             and not isinstance(reader, int)
         ):
             raise ValueError("Argument `reader` must be str or int.")
+        if not isinstance(allow_extended_apdu, bool):
+            raise ValueError("Argument `allow_extended_apdu` must be bool.")
 
         if reader is None:
             if nfc:
@@ -95,7 +100,9 @@ class ScExplorerCli:
             connection = connect_with_contact(reader)
             self.__logger.info("Connected to card.")
 
-        self.__connection = create_card_connection(connection)
+        self.__connection = create_card_connection(
+            connection, allow_extended_apdu=allow_extended_apdu
+        )
 
         self.last_response_status: CardResponseStatus | None = None
         self.last_response_data: bytes = b""
