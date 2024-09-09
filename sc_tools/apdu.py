@@ -5,6 +5,16 @@ from typing import Literal
 LeLiteral = Literal["max"]
 
 
+def max_lc_le(extended_apdu: bool) -> int:
+    """Get Max Lc/Le value
+
+    Returns:
+        int: Max Lc/Le value
+    """
+
+    return 0x10000 if extended_apdu else 0x100
+
+
 class CommandApdu:
     """Command APDU"""
 
@@ -45,7 +55,7 @@ class CommandApdu:
             int: Max Lc/Le value
         """
 
-        return 0x10000 if self.extended else 0x100
+        return max_lc_le(self.extended)
 
     def lc_le_bytes(self, lc_le: int) -> bytes:
         """Get Lc/Le bytes

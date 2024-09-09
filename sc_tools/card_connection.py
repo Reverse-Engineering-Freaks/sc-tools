@@ -5,7 +5,7 @@ from nfc.tag.tt4 import Type4Tag
 from smartcard.CardConnection import CardConnection as PyscardCardConnection
 from typing import Callable
 
-from .apdu import CommandApdu
+from .apdu import max_lc_le, CommandApdu
 from .card_response import CardResponseStatusType, CardResponseStatus, CardResponseError
 
 
@@ -130,11 +130,11 @@ class CardConnection:
         if cla < 0x00 or 0xFF < cla:
             raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
 
-        # max_bulk_read_length = self.max_lc_le()
+        max_bulk_read_length = max_lc_le(self.allow_extended_apdu)
         status, data = self.read_binary(cla=cla, offset=0x0000, raise_error=raise_error)
         offset = len(data)
         # last_read_length = len(data)
-        while True:
+        while len(data) == max_bulk_read_length:
             status, chunk_data = self.read_binary(
                 cla=cla, offset=offset, raise_error=False
             )
