@@ -29,6 +29,7 @@ class ScExplorerCli:
     Args:
         nfc (bool, optional): Use NFC reader. Defaults to False.
         reader (str | int, optional): Reader descriptor. Reader name or index in list. Defaults to 0.
+        allow_extended_apdu (bool, optional): Allow Extended APDU
         log_level (str, optional): Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
 
     Raises:
