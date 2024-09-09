@@ -495,22 +495,29 @@ class ScExplorerCli:
             if dump_path is None:
                 return
 
-            data = None
-            if CardFileAttribute.WEF_TRANSPARENT in ef_attribute:
-                self.__connection.select_ef(ef_id, cla=cla)
-                status, data = self.__connection.read_all_binary(cla=cla)
-            if CardFileAttribute.WEF_RECORD in ef_attribute:
-                self.__connection.select_ef(ef_id, cla=cla)
-                status, data = self.__connection.read_record(cla=cla)
-            if data is None:
-                return
             # Dump to file
             file_name = ""
             if self.selected_df is None:
                 file_name += "DEFAULT_DF"
             else:
                 file_name += self.selected_df.hex().upper()
-            file_name += f"_EF_{ef_id.hex().upper()}.bin"
+            file_name += "_EF_"
+            file_name += ef_id.hex().upper()
+
+            data = None
+            if CardFileAttribute.WEF_TRANSPARENT in ef_attribute:
+                file_name += "_TRANSPARENT"
+                self.__connection.select_ef(ef_id, cla=cla)
+                status, data = self.__connection.read_all_binary(cla=cla)
+            if CardFileAttribute.WEF_RECORD in ef_attribute:
+                self.__connection.select_ef(ef_id, cla=cla)
+                status, data = self.__connection.read_record(cla=cla)
+                file_name += "_RECORD"
+            if data is None:
+                return
+            
+            file_name += ".bin"
+
             file_path = os.path.join(dump_path, file_name)
             with open(file_path, "wb") as file:
                 file.write(data)
