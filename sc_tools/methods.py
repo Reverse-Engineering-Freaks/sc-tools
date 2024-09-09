@@ -343,6 +343,20 @@ def list_do(
 
     do_list: list[tuple[bytes, bool]] = []
 
+    # 1 byte tag
+    for tag in tqdm(range(0x01, 0xFF), desc="List Data Object (1 byte tag)"):
+        tag_bytes = tag.to_bytes(length=1)
+        status, data = connection.get_data(tag_bytes, cla=cla, raise_error=False)
+        status_type = status.status_type()
+        if (
+            status_type == CardResponseStatusType.NORMAL_END
+            or status_type == CardResponseStatusType.INCORRECT_LC_LE_FIELD
+        ):
+            tqdm.write(f"Data Object {tag_bytes.hex().upper()} (1 byte tag) found.")
+            do_list.append((tag_bytes, False))
+            if found_callback is not None:
+                found_callback(tag_bytes, False, data)
+
     # Simplified encoding
     for tag in tqdm(range(0x01, 0xFF), desc="List Data Object (Simplified encoding)"):
         tag_bytes = tag.to_bytes(length=1)
@@ -360,20 +374,6 @@ def list_do(
             do_list.append((tag_bytes, True))
             if found_callback is not None:
                 found_callback(tag_bytes, True, data)
-
-    # 1 byte tag
-    for tag in tqdm(range(0x01, 0xFF), desc="List Data Object (1 byte tag)"):
-        tag_bytes = tag.to_bytes(length=1)
-        status, data = connection.get_data(tag_bytes, cla=cla, raise_error=False)
-        status_type = status.status_type()
-        if (
-            status_type == CardResponseStatusType.NORMAL_END
-            or status_type == CardResponseStatusType.INCORRECT_LC_LE_FIELD
-        ):
-            tqdm.write(f"Data Object {tag_bytes.hex().upper()} (1 byte tag) found.")
-            do_list.append((tag_bytes, False))
-            if found_callback is not None:
-                found_callback(tag_bytes, False, data)
 
     # 2 byte tag
     for tag in tqdm(range(0x1F1F, 0x10000), desc="List Data Object (2 byte tag)"):
