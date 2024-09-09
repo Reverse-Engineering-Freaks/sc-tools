@@ -224,11 +224,12 @@ class ScExplorerCli:
 
         return self
 
-    def select_df(self, df_id, cla=0x00) -> Self:
+    def select_df(self, df_id, fci=False, cla=0x00) -> Self:
         """SELECT FILE (DF)
 
         Args:
             df_id (bytes): DF identifier as hex string
+            fci (bool, optional): Get File Control Information
             cla (int, optional): CLA. Defaults to 0x00.
 
         Raises:
@@ -243,11 +244,13 @@ class ScExplorerCli:
             raise ValueError("Argument `df_id` must be str.")
         if not isinstance(cla, int):
             raise ValueError("Argument `cla` must be int.")
+        if not isinstance(fci, bool):
+            raise ValueError("Argument `file_control_information` must be int.")
 
         df_id = df_id.replace(" ", "")
         df_id_bytes = bytes.fromhex(df_id)
         self.last_response_status, self.last_response_data = (
-            self.__connection.select_df(df_id_bytes, cla=cla)
+            self.__connection.select_df(df_id_bytes, fci, cla=cla)
         )
 
         self.selected_df = df_id_bytes

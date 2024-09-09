@@ -191,6 +191,7 @@ class CardConnection:
     def select_df(
         self,
         df_id: bytes,
+        fci: bool = False,
         cla: int = 0x00,
         raise_error: bool = True,
     ) -> tuple[CardResponseStatus, bytes]:
@@ -198,6 +199,7 @@ class CardConnection:
 
         Args:
             df_id (bytes): DF Ientifier
+            fci (bool, optional): Get File Control Information
             cla (int, optional): CLA. Defaults to 0x00.
             raise_error (bool, optional): Raise error when card error response returned. Defaults to True.
 
@@ -211,9 +213,10 @@ class CardConnection:
         if cla < 0x00 or 0xFF < cla:
             raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
 
-        command = CommandApdu(
-            cla, 0xA4, 0x04, 0x00, data=df_id, le="max", extended=False
-        )
+        command = CommandApdu(cla, 0xA4, 0x04, 0x0C, data=df_id, extended=False)
+        if fci:
+            command.p2 = 0x00
+            command.le = "max"
         return self.transmit(command.to_bytes(), raise_error=raise_error)
 
     def select_ef(
