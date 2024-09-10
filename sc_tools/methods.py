@@ -199,6 +199,8 @@ def attribute_ef(
 
     status, data = connection.select_ef(ef_id, cla=cla)
 
+    ef_attribute = CardFileAttribute.UNKNOWN
+
     # IEF/VERIFY_KEY
     status, data = connection.verify(None, cla=cla, raise_error=False)
     status_type = status.status_type()
@@ -230,16 +232,23 @@ def attribute_ef(
             ef_attribute |= CardFileAttribute.VERIFICATION_UNLIMITED
         if status.verification_remaining() == 0:
             ef_attribute |= CardFileAttribute.LOCKED
-        # WEF/SECRET (JPKI PRIVATE KEY)
-        status, data = connection.jpki_sign(
-            b"\x30\x31\x30\x0B\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20\xe3\xb0\xc4\x42\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99\x6f\xb9\x24\x27\xae\x41\xe4\x64\x9b\x93\x4c\xa4\x95\x99\x1b\x78\x52\xb8\x55",
-            raise_error=False,
+
+    # IEF/JPKI_SIGN_PRIVATE_KEY
+    status, data = connection.jpki_sign(
+        b"\x30\x31\x30\x0B\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20\xe3\xb0\xc4\x42\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99\x6f\xb9\x24\x27\xae\x41\xe4\x64\x9b\x93\x4c\xa4\x95\x99\x1b\x78\x52\xb8\x55",
+        raise_error=False,
+    )
+    status_type = status.status_type()
+    if status_type == CardResponseStatusType.NORMAL_END:
+        ef_attribute |= CardFileAttribute.JPKI_SIGN_PRIVATE_KEY
+    if status_type == CardResponseStatusType.SECURITY_STATUS_NOT_FULFILLED:
+        ef_attribute |= (
+            CardFileAttribute.JPKI_SIGN_PRIVATE_KEY
+            | CardFileAttribute.VERIFICATION_REQUIRED
         )
-        status_type = status.status_type()
-        if status_type == CardResponseStatusType.NORMAL_END:
-            ef_attribute |= CardFileAttribute.JPKI_SIGN_PRIVATE_KEY
-        if status_type == CardResponseStatusType.SECURITY_STATUS_NOT_FULFILLED:
-            ef_attribute |= CardFileAttribute.VERIFICATION_REQUIRED
+
+    # IEF/EXTERNAL_AUTHENTICATE_KEY or IEF/JPKI_SIGN_PRIVATE_KEY
+    if ef_attribute != CardFileAttribute.UNKNOWN:
         return ef_attribute
 
     # WEF/BINARY
