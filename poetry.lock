@@ -185,25 +185,25 @@ files = [
 
 [[package]]
 name = "pyscard"
-version = "2.0.10"
+version = "2.1.1"
 description = "Smartcard module for Python."
 optional = false
 python-versions = "*"
 files = [
-    {file = "pyscard-2.0.10-cp310-cp310-win32.whl", hash = "sha256:2ae1ece465ccd060e0a268cad1a213414ce8f7a8346bdb00b8470cf4b7826915"},
-    {file = "pyscard-2.0.10-cp310-cp310-win_amd64.whl", hash = "sha256:c7197af995768e522665c3d01099224a268e1791b0dd5b8762364063a07503fa"},
-    {file = "pyscard-2.0.10-cp311-cp311-win32.whl", hash = "sha256:af334ecff0a9415e4baa6c6b0c476148dfc81490671dad8eec5eff091bcdfdde"},
-    {file = "pyscard-2.0.10-cp311-cp311-win_amd64.whl", hash = "sha256:c5281b4a124ac27e854b3630eb026e9ac6c4b984e7958586a3cb2b6403c2d11b"},
-    {file = "pyscard-2.0.10-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:3d66ac3c7f6014351847b8efdbc684e9ac0a4ebb60fcb8a573c182e0f13b6fa4"},
-    {file = "pyscard-2.0.10-cp312-cp312-win32.whl", hash = "sha256:eea9aad08d3baa6c5542d7c5c86e4975873c3260379ed2205c1ede713cf3ffb9"},
-    {file = "pyscard-2.0.10-cp312-cp312-win_amd64.whl", hash = "sha256:5fbbc848c93641677bab855ef313b4c4153e63c82bcdf2aba4d79f99699398b5"},
-    {file = "pyscard-2.0.10-cp37-cp37m-win32.whl", hash = "sha256:ebdd8ad859a2df2c9c919932bfd862076345e95e14027123a261bd814e327fb4"},
-    {file = "pyscard-2.0.10-cp37-cp37m-win_amd64.whl", hash = "sha256:1349a5f2113090d9f58947158bcd6ab94d4c8287c461fe86909cd766631a55d8"},
-    {file = "pyscard-2.0.10-cp38-cp38-win32.whl", hash = "sha256:f9f54e3a5b15cd825119f056c517f7cb34da76c934819548a38f77d8f4eea978"},
-    {file = "pyscard-2.0.10-cp38-cp38-win_amd64.whl", hash = "sha256:3de4e46ebfb5f6ae9e9ce225e62c784dceb83dd304b9caad3dd4a00447224c71"},
-    {file = "pyscard-2.0.10-cp39-cp39-win32.whl", hash = "sha256:6f79249bf169ab5f0c5272a0d36576d153a6132ad3e9728c5275a93e99de0f61"},
-    {file = "pyscard-2.0.10-cp39-cp39-win_amd64.whl", hash = "sha256:b4acd0deb624cd931572be306aab3fee7a0e527d2daa8a8bf943e291bc043315"},
-    {file = "pyscard-2.0.10.tar.gz", hash = "sha256:4b9b865df03b29522e80ebae17790a8b3a096a9d885cda19363b44b1a6bf5c1c"},
+    {file = "pyscard-2.1.1-cp310-cp310-win32.whl", hash = "sha256:73738b401bd8ed56dc508e8c035fda876d3612f2fd6ebd1fd1ecb1f70c81280e"},
+    {file = "pyscard-2.1.1-cp310-cp310-win_amd64.whl", hash = "sha256:d8e57488f311299b60c1067bb1ad123f0367a356b4b011383ca4d592d365a81e"},
+    {file = "pyscard-2.1.1-cp311-cp311-win32.whl", hash = "sha256:07a35f1c2d6521f82c0e5b793f0968cc0b3c2473667435414eb467cb3e5b3765"},
+    {file = "pyscard-2.1.1-cp311-cp311-win_amd64.whl", hash = "sha256:0fb446d519e9ebc437fabc0c797e869ccd9f0340f9d2d72d7edc628f22267ac3"},
+    {file = "pyscard-2.1.1-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:df5fa9423b61a2528b91de7a171fe110b7bee7e1d36e1a7e479512014a9e90a2"},
+    {file = "pyscard-2.1.1-cp312-cp312-win32.whl", hash = "sha256:bc1f2185e696261f6e29eb0d2beba0c86796e1b4f0b17cd69900c597b591be2a"},
+    {file = "pyscard-2.1.1-cp312-cp312-win_amd64.whl", hash = "sha256:5294303aee527999accfe18aec5087223f3e0b164c323f6c62bdbde2d06fca79"},
+    {file = "pyscard-2.1.1-cp37-cp37m-win32.whl", hash = "sha256:213cab68b10e3d66702a56d12b5f30a3096a27e25a39a168d292775509d34014"},
+    {file = "pyscard-2.1.1-cp37-cp37m-win_amd64.whl", hash = "sha256:ee9925d8c69fd853f06fa637f6823463d6cf4353396f455c8e53028fdaa74342"},
+    {file = "pyscard-2.1.1-cp38-cp38-win32.whl", hash = "sha256:9e2ee52e4420125af3bf67b7f4dcb80b7f7242e1482d247c13698ae1727a7d00"},
+    {file = "pyscard-2.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:b9bdd5255a69b28e32a79152a66e8ac135d67eb4f81d0e2834a12e263a50f62b"},
+    {file = "pyscard-2.1.1-cp39-cp39-win32.whl", hash = "sha256:486e2b52f4de1ecdfe2342fcabb8991d9e8ba713d33cb1a73ad9972fead846ff"},
+    {file = "pyscard-2.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:68c0cbaec6468e2eac599ca90efa2b0427721f9f3ca8dbcf7c5ca3b996045984"},
+    {file = "pyscard-2.1.1.tar.gz", hash = "sha256:f9b0dc3fad83ac72a9335af4d04b608edc9d01e2b90e0c38ed0ef1fd014c4414"},
 ]
 
 [package.extras]
@@ -272,4 +272,4 @@ telegram = ["requests"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "3477659355fa950ff3e49f9f709ddcf894c4b0c62d5c60cb880a62ac72fd6a89"
+content-hash = "3cd01d9b31b9dafc108157ded34f7d1a31de15f79c9a90ef6838733e3756ed72"
