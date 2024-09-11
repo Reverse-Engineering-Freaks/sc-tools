@@ -125,5 +125,5 @@ class CardResponseError(Exception):
             self.status = CardResponseStatus(response_status)
         else:
             self.status = response_status
-        self.message = f"The card returned {format(self.status.sw, "04X")} ({self.status.status_type().name})."
+        self.message = f"The card returned {format(self.status.sw, '04X')} ({self.status.status_type().name})."
         super().__init__(self.message)
