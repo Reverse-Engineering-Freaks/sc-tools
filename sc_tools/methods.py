@@ -404,7 +404,7 @@ def list_do(
             status_type == CardResponseStatusType.NORMAL_END
             or status_type == CardResponseStatusType.INCORRECT_LC_LE_FIELD
         ):
-            tqdm.write(f"Data Object {tag_bytes.hex().upper()} (1 byte tag) found.")
+            tqdm.write(f"Data Object {tag_bytes.hex().upper()} (2 byte tag) found.")
             do_list.append((tag_bytes, False))
             if found_callback is not None:
                 found_callback(tag_bytes, False, data)
