@@ -91,9 +91,15 @@ class CommandApdu:
     def to_bytes(self) -> bytes:
         """To bytes
 
+        Raises:
+            ValueError: Invalid property `data`
+
         Returns:
             bytes: The instance as bytes
         """
+
+        if self.max_lc_le() < len(self.data):
+            raise ValueError("Property `data` length out of capcacity.")
 
         buffer = bytearray()
         buffer.append(self.cla)
