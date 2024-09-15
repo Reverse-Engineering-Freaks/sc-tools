@@ -184,7 +184,7 @@ class ScExplorerCli:
         command = command.replace(" ", "")
         command_bytes = bytes.fromhex(command)
         self.last_response_status, self.last_response_data = self.__connection.transmit(
-            command_bytes
+            command_bytes, raise_error=False
         )
 
         return self
