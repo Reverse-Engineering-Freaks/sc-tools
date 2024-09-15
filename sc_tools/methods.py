@@ -5,7 +5,7 @@ from tqdm import tqdm
 from typing import Callable
 
 from .apdu import CommandApdu
-from .card_response import CardResponseStatusType, CardResponseError
+from .card_response import CardResponseStatusType, CardResponseStatus, CardResponseError
 from .card_connection import CardConnection
 
 
@@ -48,6 +48,24 @@ def list_cla_ins(
         list[tuple[int, int, CardResponseStatusType]]: List of valid CLA-INS and Response Status
     """
 
+    def is_valid_cla(status: CardResponseStatus) -> bool:
+        status_type = status.status_type()
+        return (
+            status_type != CardResponseStatusType.CLA_FEATURE_NOT_PROVIDED
+            and status_type != CardResponseStatusType.CLASS_NOT_PROVIDED
+        )
+
+    def is_valid_cla_ins(status: CardResponseStatus):
+        status_type = status.status_type()
+        return (
+            is_valid_cla(status)
+            and status_type != CardResponseStatusType.INS_NOT_PROVIDED
+            and status_type
+            != CardResponseStatusType.ACCESS_FEATURE_WITH_THE_SPECIFIED_LOGICAL_CHANNEL_NUMBER_NOT_PROVIDED
+            and status_type
+            != CardResponseStatusType.SECURE_MESSAGING_FEATURE_NOT_PROVIDED
+        )
+
     if cla_start < 0x00 or 0x100 < cla_start:
         raise ValueError(
             "Argument `cla_start` out of range. (0x00 <= cla_start <= 0x100)"
@@ -67,21 +85,15 @@ def list_cla_ins(
             command = CommandApdu(
                 cla, ins, 0x00, 0x00, extended=connection.allow_extended_apdu
             )
-            status, data = connection.transmit(command, raise_error=False)
-            status_type = status.status_type()
-            if status_type == CardResponseStatusType.CLASS_NOT_PROVIDED:
+            status, data = connection.transmit(command.to_bytes(), raise_error=False)
+            if not is_valid_cla(status):
                 break
-            if (
-                status_type == CardResponseStatusType.INS_NOT_PROVIDED
-                or status_type
-                == CardResponseStatusType.ACCESS_FEATURE_WITH_THE_SPECIFIED_LOGICAL_CHANNEL_NUMBER_NOT_PROVIDED
-                or status_type
-                == CardResponseStatusType.SECURE_MESSAGING_FEATURE_NOT_PROVIDED
-            ):
+            if not is_valid_cla_ins(status):
                 continue
             cla_hex = format(cla, "02X")
             ins_hex = format(ins, "02X")
             sw_hex = format(status.sw, "04X")
+            status_type = status.status_type()
             tqdm.write(
                 f"CLA {cla_hex}, INS {ins_hex} found with status {sw_hex} ({status_type})."
             )
@@ -121,6 +133,10 @@ def list_p1_p2(
         list[tuple[int, int, CardResponseStatusType]]: List of valid P1-P2 and Response Status
     """
 
+    def is_valid_p1_p2(status: CardResponseStatus):
+        status_type = status.status_type()
+        return status_type != CardResponseStatusType.INCORRECT_P1_P2_VALUE
+
     if cla < 0x00 or 0xFF < cla:
         raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
     if ins < 0x00 or 0xFF < ins:
@@ -145,9 +161,8 @@ def list_p1_p2(
             command = CommandApdu(
                 cla, ins, p1, p2, extended=connection.allow_extended_apdu
             )
-            status, data = connection.transmit(command, raise_error=False)
-            status_type = status.status_type()
-            if status_type != CardResponseStatusType.INCORRECT_P1_P2_VALUE:
+            status, data = connection.transmit(command.to_bytes(), raise_error=False)
+            if is_valid_p1_p2(status):
                 p1_hex = format(p1, "02X")
                 p2_hex = format(p2, "02X")
                 sw_hex = format(status.sw, "04X")
@@ -158,9 +173,9 @@ def list_p1_p2(
                 continue
             # Le=MAX
             command.le = "max"
-            status, data = connection.transmit(command, raise_error=False)
+            status, data = connection.transmit(command.to_bytes(), raise_error=False)
             status_type = status.status_type()
-            if status_type != CardResponseStatusType.INCORRECT_P1_P2_VALUE:
+            if is_valid_p1_p2(status):
                 p1_hex = format(p1, "02X")
                 p2_hex = format(p2, "02X")
                 sw_hex = format(status.sw, "04X")
@@ -174,30 +189,23 @@ def list_p1_p2(
 
 def attribute_ef(
     connection: CardConnection,
-    ef_id: bytes,
     cla: int = 0x00,
 ) -> CardFileAttribute:
     """Attribute EF
 
     Args:
         connection (CardConnection): Card Connection
-        ef_id (bytes): EF identifier
         cla (int, optional): CLA. Defaults to 0x00.
 
     Raises:
-        ValueError: Invalid argument `ef_id`
         ValueError: Invalid argument `cla`
 
     Returns:
         CardFileAttribute: EF Attribute
     """
 
-    if len(ef_id) != 2:
-        raise ValueError("Argument `ef_id` length must be 2.")
     if cla < 0x00 or 0xFF < cla:
         raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
-
-    status, data = connection.select_ef(ef_id, cla=cla)
 
     ef_attribute = CardFileAttribute.UNKNOWN
 
@@ -319,7 +327,7 @@ def list_ef(
             status_type == CardResponseStatusType.NORMAL_END
             or status_type == CardResponseStatusType.FILE_CONTROL_INFORMATION_FAILURE
         ):
-            ef_attribute = attribute_ef(connection, ef_id_bytes, cla=cla)
+            ef_attribute = attribute_ef(connection, cla=cla)
             tqdm.write(f"EF {ef_id_bytes.hex().upper()} ({ef_attribute.name}) found.")
             ef_list.append((ef_id_bytes, ef_attribute))
             if found_callback is not None:
