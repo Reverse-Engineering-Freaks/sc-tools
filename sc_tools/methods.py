@@ -219,6 +219,8 @@ def attribute_ef(
         if status.verification_remaining() == 0:
             ef_attribute |= CardFileAttribute.LOCKED
         return ef_attribute
+    if status_type == CardResponseStatusType.REFERENCED_IEF_LOCKED:
+        return CardFileAttribute.IEF_VERIFY_KEY | CardFileAttribute.LOCKED
 
     # # IEF/INTERNAL_AUTHENTICATE_KEY
     # status, data = connection.internal_authenticate(
@@ -240,6 +242,10 @@ def attribute_ef(
             ef_attribute |= CardFileAttribute.VERIFICATION_UNLIMITED
         if status.verification_remaining() == 0:
             ef_attribute |= CardFileAttribute.LOCKED
+    if status_type == CardResponseStatusType.REFERENCED_IEF_LOCKED:
+        ef_attribute |= (
+            CardFileAttribute.IEF_EXTERNAL_AUTHENTICATE_KEY | CardFileAttribute.LOCKED
+        )
 
     # IEF/JPKI_SIGN_PRIVATE_KEY
     status, data = connection.jpki_sign(
@@ -253,6 +259,10 @@ def attribute_ef(
         ef_attribute |= (
             CardFileAttribute.JPKI_SIGN_PRIVATE_KEY
             | CardFileAttribute.VERIFICATION_REQUIRED
+        )
+    if status_type == CardResponseStatusType.REFERENCED_IEF_LOCKED:
+        ef_attribute |= (
+            CardFileAttribute.JPKI_SIGN_PRIVATE_KEY | CardFileAttribute.LOCKED
         )
 
     # IEF/EXTERNAL_AUTHENTICATE_KEY or IEF/JPKI_SIGN_PRIVATE_KEY
