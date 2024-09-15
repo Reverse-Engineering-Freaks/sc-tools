@@ -51,14 +51,14 @@ class ScExplorerCli:
         )
 
     def __init__(
-        self, nfc=False, reader=0, allow_extended_apdu=True, log_level="INFO"
+        self, nfc=False, reader=0, allow_extended_apdu=False, log_level="INFO"
     ) -> None:
         """Constructor
 
         Args:
             nfc (bool, optional): Use NFC reader. Defaults to False.
             reader (str | int, optional): Reader descriptor. Reader name or index in list. Defaults to 0.
-            allow_extended_apdu (bool, optional): Allow Extended APDU
+            allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
             log_level (str, optional): Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
 
         Raises:

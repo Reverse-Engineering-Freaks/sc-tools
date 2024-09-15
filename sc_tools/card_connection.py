@@ -15,14 +15,14 @@ class CardConnection:
     def __init__(
         self,
         transmit: Callable[[bytes], tuple[CardResponseStatus, bytes]],
-        allow_extended_apdu=True,
+        allow_extended_apdu=False,
         identifier: bytes | None = None,
     ) -> None:
         """Constructor
 
         Args:
             transmit (Callable[[bytes], tuple[CardResponseStatus, bytes]]): Transmit function
-            allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to True.
+            allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
             identifier (bytes | None, optional): Identifier for NFC. Defaults to None.
         """
 
@@ -433,13 +433,13 @@ class CardConnection:
 
 def create_card_connection(
     connection: PyscardCardConnection | Type4Tag,
-    allow_extended_apdu: bool = True,
+    allow_extended_apdu: bool = False,
 ) -> CardConnection:
     """Create Card Connection
 
     Args:
         connection (PyscardCardConnection | Type4Tag): PC/SC connection or NFC Type 4 Tag connection
-        allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to True.
+        allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
 
     Returns:
         CardConnection: CardConnection instance
