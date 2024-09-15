@@ -548,6 +548,9 @@ class ScExplorerCli:
         Raises:
             ValueError: Invalid argument `cla`
             ValueError: Invalid argument `dump_path`
+
+        Returns:
+            Self: This instance
         """
 
         if not isinstance(cla, int):
