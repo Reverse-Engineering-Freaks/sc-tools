@@ -309,6 +309,9 @@ def list_ef(
 
     ef_list: list[tuple[bytes, CardFileAttribute]] = []
     for ef_id in tqdm(range(start, end), desc="List EF"):
+        if ef_id == 0x3FFF or ef_id == 0xFFFF:
+            # RFU
+            continue
         ef_id_bytes = ef_id.to_bytes(length=2, byteorder="big")
         status, data = connection.select_ef(ef_id_bytes, cla=cla, raise_error=False)
         status_type = status.status_type()
