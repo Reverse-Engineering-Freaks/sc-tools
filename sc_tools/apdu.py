@@ -98,7 +98,7 @@ class CommandApdu:
             bytes: The instance as bytes
         """
 
-        if self.max_lc_le() < len(self.data):
+        if self.data is not None and self.max_lc_le() < len(self.data):
             raise ValueError("Property `data` length out of capcacity.")
 
         buffer = bytearray()
