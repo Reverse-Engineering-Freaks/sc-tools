@@ -517,7 +517,7 @@ class ScExplorerCli:
                 file_name += "_RECORD"
             if data is None:
                 return
-            
+
             file_name += ".bin"
 
             file_path = os.path.join(dump_path, file_name)
