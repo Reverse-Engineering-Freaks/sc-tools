@@ -14,6 +14,7 @@ from sc_tools.methods import (
     list_p1_p2,
     list_ef,
     list_do,
+    search_df,
 )
 from sc_tools.readers import (
     list_contact_reader,
@@ -574,6 +575,29 @@ class ScExplorerCli:
                 file.write(data)
 
         do_list = list_do(self.__connection, cla=cla, found_callback=found_callback)
+
+        return self
+
+    def search_df(
+        self,
+        cla=0x00,
+    ) -> Self:
+        """Search DF
+
+        Args:
+            cla (hexadecimal, optional): CLA. Defaults to 0x00.
+
+        Raises:
+            ValueError: Invalid argument `cla`
+
+        Returns:
+            Self: This instance
+        """
+
+        if not isinstance(cla, int):
+            raise ValueError("Argument `cla` must be int.")
+
+        df_list = search_df(self.__connection, cla=cla)
 
         return self
 

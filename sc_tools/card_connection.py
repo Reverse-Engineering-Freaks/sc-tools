@@ -3,10 +3,13 @@
 import logging
 from nfc.tag.tt4 import Type4Tag
 from smartcard.CardConnection import CardConnection as PyscardCardConnection
-from typing import Callable
+from typing import Callable, Literal
 
 from .apdu import max_lc_le, CommandApdu
 from .card_response import CardResponseStatusType, CardResponseStatus, CardResponseError
+
+
+FciLiteral = Literal["first", "next", False]
 
 
 class CardConnection:
@@ -189,7 +192,7 @@ class CardConnection:
     def select_df(
         self,
         df_id: bytes,
-        fci: bool = False,
+        fci: FciLiteral = False,
         cla: int = 0x00,
         raise_error: bool = True,
     ) -> tuple[CardResponseStatus, bytes]:
@@ -212,8 +215,11 @@ class CardConnection:
             raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
 
         command = CommandApdu(cla, 0xA4, 0x04, 0x0C, data=df_id, extended=False)
-        if fci:
+        if fci == "first":
             command.p2 = 0x00
+            command.le = "max"
+        elif fci == "next":
+            command.p2 = 0x02
             command.le = "max"
         return self.transmit(command.to_bytes(), raise_error=raise_error)
 

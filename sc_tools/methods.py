@@ -1,6 +1,10 @@
 """Usable methods for Smart Cards"""
 
+from ber_tlv.tlv import Tlv
+import csv
 from enum import Flag
+from importlib.resources import files
+from iso3166 import Country, countries
 from tqdm import tqdm
 from typing import Callable
 
@@ -420,3 +424,138 @@ def list_do(
                 found_callback(tag_bytes, False, data)
 
     return do_list
+
+
+def search_df(
+    connection: CardConnection,
+    cla: int = 0x00,
+    found_callback: Callable[[bytes], None] | None = None,
+) -> list[bytes]:
+    """Search DF
+
+    Args:
+        connection (CardConnection): Card Connection
+        cla (int, optional): CLA. Defaults to 0x00.
+        found_callback (Callable[[bytes], None] | None, optional): Found callback. Defaults to None.
+
+    Returns:
+        list[bytes]: List of DF identifier
+    """
+
+    def df_id_by_fci(fci: bytes) -> bytes:
+        fci_tlv = Tlv.parse(fci)
+        fci_tag = next(
+            (tag_value for tag_value in fci_tlv if tag_value[0] == 111), None
+        )
+        if fci_tag is None:
+            # No FCI tag
+            return
+        # print(fci_tag)
+        if not isinstance(fci_tag[1], list):
+            # No valid FCI payload
+            return
+        df_id_tag = next(
+            (tag_value for tag_value in fci_tag[1] if tag_value[0] == 132), None
+        )
+        if df_id_tag is None:
+            # No DF ID tag
+            return
+        return df_id_tag[1]
+
+    def search_df_by_partial_id(
+        partial_df_id: bytes,
+        found_callback: Callable[[bytes], None] | None = None,
+    ):
+        status, data = connection.select_df(partial_df_id, cla=cla, raise_error=False)
+        status_type = status.status_type()
+        if status_type != CardResponseStatusType.NORMAL_END:
+            # No RID
+            return
+        status, data = connection.select_df(
+            partial_df_id, fci="first", cla=cla, raise_error=False
+        )
+        status_type = status.status_type()
+        if status_type != CardResponseStatusType.NORMAL_END:
+            # Cannot get FCI
+            return
+        df_id = df_id_by_fci(data)
+        if df_id is None:
+            return
+        found_callback(df_id)
+        while True:
+            status, data = connection.select_df(
+                partial_df_id, fci="next", cla=cla, raise_error=False
+            )
+            status_type = status.status_type()
+            if status_type != CardResponseStatusType.NORMAL_END:
+                # Cannot get FCI
+                break
+            df_id = df_id_by_fci(data)
+            if df_id is None:
+                break
+            found_callback(df_id)
+
+    with files("sc_tools").joinpath(
+        "well_known_rids.csv"
+    ).open() as well_known_rids_file:
+        well_known_rids = list(csv.DictReader(well_known_rids_file))
+
+    df_list: list[bytes] = []
+
+    def local_found_callback(df_id: bytes) -> None:
+        found_df = next(
+            (local_df_id for local_df_id in df_list if local_df_id == df_id), None
+        )
+        if found_df is None:
+            df_list.append(df_id)
+            if found_callback is not None:
+                found_callback(df_id)
+
+        well_known_rid_local = next(
+            (rid for rid in well_known_rids if bytes.fromhex(rid["RID"]) == df_id[0:5]),
+            None,
+        )
+        if well_known_rid_local is not None:
+            message = "DF `"
+            message += df_id.hex(" ").upper()
+            message += "` ("
+            if len(well_known_rid_local["Provider"]) == 0:
+                message += "N/A"
+            else:
+                message += well_known_rid_local["Provider"]
+            message += "; "
+            if len(well_known_rid_local["Country"]) == 0:
+                message += "N/A"
+            else:
+                message += "Registered in "
+                message += well_known_rid_local["Country"]
+            message += ") found."
+            tqdm.write(message)
+            return
+
+        country: Country | None = None
+        if df_id[0] & 0xF0 == 0xD0:
+            country_code = int(df_id.hex()[1:4])
+            country = countries.get(country_code)
+
+        if country is None:
+            tqdm.write(f"DF `{df_id.hex(' ').upper()}` found.")
+        else:
+            tqdm.write(
+                f"DF `{df_id.hex(' ').upper()}` (Registered in {country.name}) found."
+            )
+
+    # Brute-force
+    for partial_df_id in tqdm(range(0x00, 0x100), desc="Search DF by Brute-force"):
+        search_df_by_partial_id(
+            bytes([partial_df_id]), found_callback=local_found_callback
+        )
+
+    # Well-known RIDs
+    for well_known_rid in tqdm(
+        list(well_known_rids), desc="Search DF by Well-known RIDs"
+    ):
+        rid_bytes = bytes.fromhex(well_known_rid["RID"])
+        search_df_by_partial_id(rid_bytes, found_callback=local_found_callback)
+
+    return df_list
