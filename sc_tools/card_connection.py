@@ -281,7 +281,7 @@ class CardConnection:
     def internal_authenticate(
         self,
         challenge: bytes,
-        response_length: int,
+        response_length: int | None = None,
         cla: int = 0x00,
         raise_error: bool = True,
     ) -> tuple[CardResponseStatus, bytes]:
@@ -289,7 +289,7 @@ class CardConnection:
 
         Args:
             challenge (bytes): Challenge
-            response_length (int): Response length
+            response_length (int, Optional): Response length. Defaults to None.
             cla (int, optional): CLA. Defaults to 0x00.
             raise_error (bool, optional): Raise error when card error response returned. Defaults to True.
 
@@ -299,6 +299,9 @@ class CardConnection:
         Returns:
             tuple[CardResponseStatus, bytes]: Response Status and Data
         """
+
+        if response_length is None:
+            response_length = "max"
 
         if cla < 0x00 or 0xFF < cla:
             raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
