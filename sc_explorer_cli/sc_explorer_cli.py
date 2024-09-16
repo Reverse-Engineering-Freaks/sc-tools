@@ -228,7 +228,7 @@ class ScExplorerCli:
             raise ValueError("Argument `cla` must be int.")
 
         self.last_response_status, self.last_response_data = (
-            self.__connection.read_record(cla=cla)
+            self.__connection.read_all_record(cla=cla)
         )
 
         return self
