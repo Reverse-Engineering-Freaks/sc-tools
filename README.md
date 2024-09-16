@@ -31,6 +31,9 @@ FLAGS
     -r, --reader=READER
         Default: 0
         Reader descriptor. Reader name or index in list. Defaults to 0.
+    -a, --allow_extended_apdu=ALLOW_EXTENDED_APDU
+        Default: False
+        Allow Extended APDU
     -l, --log_level=LOG_LEVEL
         Default: 'INFO'
         Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
@@ -69,7 +72,7 @@ command
     Send Command APDU
 
 dump_response
-    Dump last response
+    Dump last response data
 
 get_data
     GET DATA
@@ -97,6 +100,9 @@ read_binary
 
 read_record
     READ RECORD(S)
+
+search_df
+    Search DF
 
 select_df
     SELECT FILE (DF)
