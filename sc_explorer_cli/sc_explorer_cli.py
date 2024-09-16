@@ -73,6 +73,7 @@ class ScExplorerCli:
         Raises:
             ValueError: Invalid argument `nfc`
             ValueError: Invalid argument `reader`
+            ValueError: Invalid argument `allow_extended_apdu`
             ValueError: Invalid argument `disable_transceive_log`
         """
 
