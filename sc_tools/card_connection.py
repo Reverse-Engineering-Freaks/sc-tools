@@ -155,6 +155,7 @@ class CardConnection:
 
     def read_record(
         self,
+        record_number: int = 0x01,
         cla: int = 0x00,
         limit: int | None = None,
         raise_error: bool = True,
@@ -162,6 +163,7 @@ class CardConnection:
         """READ RECORD(S)
 
         Args:
+            record_number (int, Optional): Record number. Defaults to 0x01.
             cla (int, optional): CLA. Defaults to 0x00.
             limit (int | None, optional): Limit. Defaults to None.
             raise_error (bool, optional): Raise error when card error response returned. Defaults to True.
@@ -182,12 +184,48 @@ class CardConnection:
         command = CommandApdu(
             cla,
             0xB2,
-            0x01,
-            0x05,
+            record_number,
+            0x04,
             le=limit,
             extended=self.allow_extended_apdu,
         )
         return self.transmit(command.to_bytes(), raise_error=raise_error)
+
+    def read_all_record(
+        self,
+        cla: int = 0x00,
+        raise_error: bool = True,
+    ) -> tuple[CardResponseStatus, bytes]:
+        """READ (ALL) RECORD
+
+        Args:
+            cla (int, optional): CLA. Defaults to 0x00.
+            raise_error (bool, optional): Raise error when card error response returned. Defaults to True.
+
+        Raises:
+            ValueError: Invalid argument `cla`
+            CardResponseError: Card returned error response
+
+        Returns:
+            tuple[CardResponseStatus, bytes]: Last Response Status and entire Data
+        """
+
+        if cla < 0x00 or 0xFF < cla:
+            raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
+
+        data = b""
+        for record_number in range(0x01, 0x100):
+            status, chunk_data = self.read_record(
+                record_number, cla=cla, raise_error=False
+            )
+            status_type = status.status_type()
+            if status_type == CardResponseStatusType.NO_RECORD_TO_BE_ACCESSED:
+                # Reached to End of Data
+                break
+            if raise_error and status_type != CardResponseStatusType.NORMAL_END:
+                raise CardResponseError(status)
+            data += chunk_data
+        return status, data
 
     def select_df(
         self,
