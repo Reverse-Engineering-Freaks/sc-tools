@@ -138,9 +138,7 @@ class ScExplorerCli:
                 self.transceive_log_file.write(f"< {command.hex(' ').upper()}\n")
                 self.transceive_log_file.write("> ")
                 if len(response_data) != 0:
-                    self.transceive_log_file.write(
-                        f"{response_data.hex('' '').upper()} "
-                    )
+                    self.transceive_log_file.write(f"{response_data.hex(' ').upper()} ")
                 sw_bytes = response_status.sw.to_bytes(length=2, byteorder="big")
                 self.transceive_log_file.write(f"{sw_bytes.hex(' ').upper()} \n")
                 self.transceive_log_file.write(
