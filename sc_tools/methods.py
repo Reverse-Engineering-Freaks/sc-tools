@@ -166,6 +166,7 @@ def list_p1_p2(
                 cla, ins, p1, p2, extended=connection.allow_extended_apdu
             )
             status, data = connection.transmit(command.to_bytes(), raise_error=False)
+            status_type = status.status_type()
             if is_valid_p1_p2(status):
                 p1_hex = format(p1, "02X")
                 p2_hex = format(p2, "02X")
