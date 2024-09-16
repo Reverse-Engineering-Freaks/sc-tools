@@ -4,6 +4,7 @@ import datetime
 import fire
 import logging
 import os
+from textwrap import dedent
 from typing import Self
 
 from sc_tools.dump_binary import dump_binary
@@ -134,20 +135,28 @@ class ScExplorerCli:
                 response_status: CardResponseStatus,
             ) -> None:
                 now = datetime.datetime.now().isoformat()
-                self.transceive_log_file.write(f"[{now}]\n")
-                self.transceive_log_file.write(f"< {command.hex(' ').upper()}\n")
-                self.transceive_log_file.write("> ")
-                if len(response_data) != 0:
-                    self.transceive_log_file.write(f"{response_data.hex(' ').upper()} ")
-                sw_bytes = response_status.sw.to_bytes(length=2, byteorder="big")
-                self.transceive_log_file.write(f"{sw_bytes.hex(' ').upper()} \n")
+                command_hex = command.hex(" ").upper()
+                response_data += response_status.sw.to_bytes(length=2, byteorder="big")
+                response_data_hex = response_data.hex(" ").upper()
+                sw_hex = format(response_status.sw, "04X")
+                response_status_type = response_status.status_type().name
+                transceive_log = """
+                    [{now}]
+                    < {command_hex}
+                    > {response_data_hex}
+                    SW: 0x{sw_hex} ({response_status_type})
+
+                """
                 self.transceive_log_file.write(
-                    f"SW: 0x{format(response_status.sw, '04X')} "
+                    dedent(transceive_log)[1:].format(
+                        now=now,
+                        command_hex=command_hex,
+                        response_data_hex=response_data_hex,
+                        sw_hex=sw_hex,
+                        response_status_type=response_status_type,
+                    )
                 )
-                self.transceive_log_file.write(
-                    f"({response_status.status_type().name})\n"
-                )
-                self.transceive_log_file.write("\n")
+                self.transceive_log_file.flush()
 
             self.__connection.transmit_callback = transmit_callback
 
@@ -163,18 +172,32 @@ class ScExplorerCli:
 
         message = ""
         if self.__connection.last_response_status is None:
-            message = "No last response"
+            return "No response yet."
         else:
-            if len(self.__connection.last_response_data) != 0:
-                message += "Data:\n"
-                message += dump_binary(self.__connection.last_response_data)
-                message += "\n"
-            message += "SW: 0x"
-            message += format(self.__connection.last_response_status.sw, "04X")
-            message += " ("
-            message += self.__connection.last_response_status.status_type().name
-            message += ")"
-        return message
+            response_data = (
+                self.__connection.last_response_data
+                + self.__connection.last_response_status.sw.to_bytes(
+                    length=2, byteorder="big"
+                )
+            )
+            response_data_dump = dump_binary(response_data)
+            sw_hex = format(self.__connection.last_response_status.sw, "04X")
+            response_status_type = (
+                self.__connection.last_response_status.status_type().name
+            )
+            message = """
+                {response_data_dump}
+                SW: 0x{sw_hex} ({response_status_type})
+            """
+            return (
+                dedent(message)
+                .strip()
+                .format(
+                    response_data_dump=response_data_dump,
+                    sw_hex=sw_hex,
+                    response_status_type=response_status_type,
+                )
+            )
 
     def print_response(self) -> Self:
         """Print last response
