@@ -106,11 +106,6 @@ class ScExplorerCli:
             connection, allow_extended_apdu=allow_extended_apdu
         )
 
-        self.last_response_status: CardResponseStatus | None = None
-        self.last_response_data: bytes = b""
-        self.selected_df: bytes | None = None
-        self.selected_ef: bytes | None = None
-
     def __str__(self) -> str:
         return self.__last_response_to_str()
 
@@ -122,17 +117,18 @@ class ScExplorerCli:
         """
 
         message = ""
-        if self.last_response_status is not None:
-            message += "SW: 0x"
-            message += format(self.last_response_status.sw, "04X")
-            message += " ("
-            message += self.last_response_status.status_type().name
-            message += ")\n"
-        if len(self.last_response_data) != 0:
-            message += "Data:\n"
-            message += dump_binary(self.last_response_data)
-        if len(message) == 0:
+        if self.__connection.last_response_status is None:
             message = "No last response"
+        else:
+            if len(self.__connection.last_response_data) != 0:
+                message += "Data:\n"
+                message += dump_binary(self.__connection.last_response_data)
+                message += "\n"
+            message += "SW: 0x"
+            message += format(self.__connection.last_response_status.sw, "04X")
+            message += " ("
+            message += self.__connection.last_response_status.status_type().name
+            message += ")"
         return message
 
     def print_response(self) -> Self:
@@ -161,7 +157,7 @@ class ScExplorerCli:
             raise ValueError("Argument `file_path` must be str.")
 
         with open(file_path, "wb") as file:
-            file.write(self.last_response_data)
+            file.write(self.__connection.last_response_data)
 
         return self
 
@@ -183,9 +179,7 @@ class ScExplorerCli:
 
         command = command.replace(" ", "")
         command_bytes = bytes.fromhex(command)
-        self.last_response_status, self.last_response_data = self.__connection.transmit(
-            command_bytes, raise_error=False
-        )
+        self.__connection.transmit(command_bytes, raise_error=False)
 
         return self
 
@@ -205,9 +199,7 @@ class ScExplorerCli:
         if not isinstance(cla, int):
             raise ValueError("Argument `cla` must be int.")
 
-        self.last_response_status, self.last_response_data = (
-            self.__connection.read_all_binary(cla=cla)
-        )
+        self.__connection.read_all_binary(cla=cla)
 
         return self
 
@@ -227,9 +219,7 @@ class ScExplorerCli:
         if not isinstance(cla, int):
             raise ValueError("Argument `cla` must be int.")
 
-        self.last_response_status, self.last_response_data = (
-            self.__connection.read_all_record(cla=cla)
-        )
+        self.__connection.read_all_record(cla=cla)
 
         return self
 
@@ -258,12 +248,7 @@ class ScExplorerCli:
 
         df_id = df_id.replace(" ", "")
         df_id_bytes = bytes.fromhex(df_id)
-        self.last_response_status, self.last_response_data = (
-            self.__connection.select_df(df_id_bytes, fci, cla=cla)
-        )
-
-        self.selected_df = df_id_bytes
-        self.selected_ef = None
+        self.__connection.select_df(df_id_bytes, fci, cla=cla)
 
         return self
 
@@ -289,11 +274,7 @@ class ScExplorerCli:
 
         ef_id = ef_id.replace(" ", "")
         ef_id_bytes = bytes.fromhex(ef_id)
-        self.last_response_status, self.last_response_data = (
-            self.__connection.select_ef(ef_id_bytes, cla=cla)
-        )
-
-        self.selected_ef = ef_id_bytes
+        self.__connection.select_ef(ef_id_bytes, cla=cla)
 
         return self
 
@@ -320,9 +301,7 @@ class ScExplorerCli:
         key_bytes = None
         if key is not None:
             key_bytes = str(key).encode("ascii")
-        self.last_response_status, self.last_response_data = self.__connection.verify(
-            key_bytes, cla=cla
-        )
+        self.__connection.verify(key_bytes, cla=cla)
 
         return self
 
@@ -349,9 +328,7 @@ class ScExplorerCli:
 
         tag = tag.replace(" ", "")
         tag_bytes = bytes.fromhex(tag)
-        self.last_response_status, self.last_response_data = self.__connection.get_data(
-            tag_bytes, simplified_encoding, cla=cla
-        )
+        self.__connection.get_data(tag_bytes, simplified_encoding, cla=cla)
 
         return self
 
@@ -373,9 +350,7 @@ class ScExplorerCli:
 
         input = input.replace(" ", "")
         input_bytes = bytes.fromhex(input)
-        self.last_response_status, self.last_response_data = (
-            self.__connection.jpki_sign(input_bytes)
-        )
+        self.__connection.jpki_sign(input_bytes)
 
         return self
 
@@ -409,9 +384,7 @@ class ScExplorerCli:
         if not isinstance(ins_end, int):
             raise ValueError("Argument `ins_end` must be int.")
 
-        cla_ins_list = list_cla_ins(
-            self.__connection, cla_start, cla_end, ins_start, ins_end
-        )
+        list_cla_ins(self.__connection, cla_start, cla_end, ins_start, ins_end)
 
         return self
 
@@ -499,10 +472,10 @@ class ScExplorerCli:
 
             # Dump to file
             file_name = ""
-            if self.selected_df is None:
+            if self.__connection.selected_df is None:
                 file_name += "DEFAULT_DF"
             else:
-                file_name += self.selected_df.hex().upper()
+                file_name += self.__connection.selected_df.hex().upper()
             file_name += "_EF_"
             file_name += ef_id.hex().upper()
 
@@ -564,10 +537,10 @@ class ScExplorerCli:
 
             # Dump to file
             file_name = ""
-            if self.selected_df is None:
+            if self.__connection.selected_df is None:
                 file_name += "DEFAULT_DF"
             else:
-                file_name += self.selected_df.hex().upper()
+                file_name += self.__connection.selected_df.hex().upper()
             if simplified_encoding:
                 file_name += "_SIMPLIFIED_DO_"
             else:

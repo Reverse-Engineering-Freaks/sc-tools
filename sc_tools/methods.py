@@ -71,7 +71,7 @@ def list_cla_ins(
             command = CommandApdu(
                 cla, ins, 0x00, 0x00, extended=connection.allow_extended_apdu
             )
-            status, data = connection.transmit(command.to_bytes(), raise_error=False)
+            data, status = connection.transmit(command.to_bytes(), raise_error=False)
             if not status.is_cla_valid():
                 break
             if not status.is_cla_ins_valid():
@@ -143,7 +143,7 @@ def list_p1_p2(
             command = CommandApdu(
                 cla, ins, p1, p2, extended=connection.allow_extended_apdu
             )
-            status, data = connection.transmit(command.to_bytes(), raise_error=False)
+            data, status = connection.transmit(command.to_bytes(), raise_error=False)
             if not status.is_cla_ins_valid():
                 raise RuntimeError("Invalid CLA-INS.")
             status_type = status.status_type()
@@ -158,7 +158,7 @@ def list_p1_p2(
                 continue
             # Le=MAX
             command.le = "max"
-            status, data = connection.transmit(command.to_bytes(), raise_error=False)
+            data, status = connection.transmit(command.to_bytes(), raise_error=False)
             status_type = status.status_type()
             if status.is_p1_p2_valid():
                 p1_hex = format(p1, "02X")
@@ -195,7 +195,7 @@ def attribute_ef(
     ef_attribute = CardFileAttribute.UNKNOWN
 
     # IEF/VERIFY_KEY
-    status, data = connection.verify(None, cla=cla, raise_error=False)
+    data, status = connection.verify(None, cla=cla, raise_error=False)
     status_type = status.status_type()
     if status_type == CardResponseStatusType.VERIFICATION_UNMATCHING:
         ef_attribute = CardFileAttribute.IEF_VERIFY_KEY
@@ -208,7 +208,7 @@ def attribute_ef(
         return CardFileAttribute.IEF_VERIFY_KEY | CardFileAttribute.LOCKED
 
     # IEF/INTERNAL_AUTHENTICATE_KEY
-    status, data = connection.internal_authenticate(
+    data, status = connection.internal_authenticate(
         b"\x00\x00\x00\x00\x00\x00\x00\x00", cla=cla, raise_error=False
     )
     status_type = status.status_type()
@@ -216,7 +216,7 @@ def attribute_ef(
         ef_attribute |= CardFileAttribute.IEF_INTERNAL_AUTHENTICATE_KEY
 
     # IEF/EXTERNAL_AUTHENTICATE_KEY
-    status, data = connection.external_authenticate(None, cla=cla, raise_error=False)
+    data, status = connection.external_authenticate(None, cla=cla, raise_error=False)
     status_type = status.status_type()
     if status_type == CardResponseStatusType.VERIFICATION_UNMATCHING:
         ef_attribute |= CardFileAttribute.IEF_EXTERNAL_AUTHENTICATE_KEY
@@ -230,7 +230,7 @@ def attribute_ef(
         )
 
     # IEF/JPKI_SIGN_PRIVATE_KEY
-    status, data = connection.jpki_sign(
+    data, status = connection.jpki_sign(
         b"\x30\x31\x30\x0D\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01\x05\x00\x04\x20\xe3\xb0\xc4\x42\x98\xfc\x1c\x14\x9a\xfb\xf4\xc8\x99\x6f\xb9\x24\x27\xae\x41\xe4\x64\x9b\x93\x4c\xa4\x95\x99\x1b\x78\x52\xb8\x55",
         raise_error=False,
     )
@@ -252,7 +252,7 @@ def attribute_ef(
         return ef_attribute
 
     # WEF/BINARY
-    status, data = connection.read_binary(cla=cla, raise_error=False)
+    data, status = connection.read_binary(cla=cla, raise_error=False)
     status_type = status.status_type()
     if status_type == CardResponseStatusType.NORMAL_END:
         return CardFileAttribute.WEF_TRANSPARENT
@@ -260,7 +260,7 @@ def attribute_ef(
         return CardFileAttribute.VERIFICATION_REQUIRED
 
     # WEF/RECORD
-    status, data = connection.read_record(cla=cla, raise_error=False)
+    data, status = connection.read_record(cla=cla, raise_error=False)
     status_type = status.status_type()
     if status_type == CardResponseStatusType.NORMAL_END:
         return CardFileAttribute.WEF_RECORD
@@ -313,7 +313,7 @@ def list_ef(
             # RFU
             continue
         ef_id_bytes = ef_id.to_bytes(length=2, byteorder="big")
-        status, data = connection.select_ef(ef_id_bytes, cla=cla, raise_error=False)
+        data, status = connection.select_ef(ef_id_bytes, cla=cla, raise_error=False)
         if not status.is_p1_p2_valid():
             raise RuntimeError("Cannot list EF in current DF.")
         status_type = status.status_type()
@@ -360,7 +360,7 @@ def list_do(
     # 1 byte tag
     for tag in tqdm(range(0x01, 0xFF), desc="List Data Object (1 byte tag)"):
         tag_bytes = tag.to_bytes(length=1)
-        status, data = connection.get_data(tag_bytes, cla=cla, raise_error=False)
+        data, status = connection.get_data(tag_bytes, cla=cla, raise_error=False)
         if not status.is_p1_p2_valid():
             raise RuntimeError("Cannot list DO in current DF.")
         status_type = status.status_type()
@@ -376,7 +376,7 @@ def list_do(
     # Simplified encoding
     for tag in tqdm(range(0x01, 0xFF), desc="List Data Object (Simplified encoding)"):
         tag_bytes = tag.to_bytes(length=1)
-        status, data = connection.get_data(
+        data, status = connection.get_data(
             tag_bytes, simplified_encoding=True, cla=cla, raise_error=False
         )
         if not status.is_p1_p2_valid():
@@ -396,7 +396,7 @@ def list_do(
     # 2 byte tag
     for tag in tqdm(range(0x1F1F, 0x10000), desc="List Data Object (2 byte tag)"):
         tag_bytes = tag.to_bytes(length=2, byteorder="big")
-        status, data = connection.get_data(tag_bytes, cla=cla, raise_error=False)
+        data, status = connection.get_data(tag_bytes, cla=cla, raise_error=False)
         if not status.is_p1_p2_valid():
             raise RuntimeError("Cannot list DO in current DF.")
         status_type = status.status_type()
@@ -452,14 +452,14 @@ def search_df(
         partial_df_id: bytes,
         found_callback: Callable[[bytes], None] | None = None,
     ):
-        status, data = connection.select_df(partial_df_id, cla=cla, raise_error=False)
+        data, status = connection.select_df(partial_df_id, cla=cla, raise_error=False)
         if not status.is_p1_p2_valid():
             raise RuntimeError("Cannot search DF on this card.")
         status_type = status.status_type()
         if status_type != CardResponseStatusType.NORMAL_END:
             # No RID
             return
-        status, data = connection.select_df(
+        data, status = connection.select_df(
             partial_df_id, fci="first", cla=cla, raise_error=False
         )
         status_type = status.status_type()
@@ -471,7 +471,7 @@ def search_df(
             return
         found_callback(df_id)
         while True:
-            status, data = connection.select_df(
+            data, status = connection.select_df(
                 partial_df_id, fci="next", cla=cla, raise_error=False
             )
             status_type = status.status_type()

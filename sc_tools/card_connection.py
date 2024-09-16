@@ -17,14 +17,14 @@ class CardConnection:
 
     def __init__(
         self,
-        transmit: Callable[[bytes], tuple[CardResponseStatus, bytes]],
+        transmit: Callable[[bytes], tuple[bytes, CardResponseStatus]],
         allow_extended_apdu=False,
         identifier: bytes | None = None,
     ) -> None:
         """Constructor
 
         Args:
-            transmit (Callable[[bytes], tuple[CardResponseStatus, bytes]]): Transmit function
+            transmit (Callable[[bytes], tuple[bytes, CardResponseStatus]]): Transmit function
             allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
             identifier (bytes | None, optional): Identifier for NFC. Defaults to None.
         """
@@ -35,9 +35,14 @@ class CardConnection:
         self.allow_extended_apdu = allow_extended_apdu
         self.identifier = identifier
 
+        self.last_response_status: CardResponseStatus | None = None
+        self.last_response_data: bytes = b""
+        self.selected_df: bytes | None = None
+        self.selected_ef: bytes | None = None
+
     def transmit(
         self, command: bytes, raise_error: bool = True
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """Transmit
 
         Args:
@@ -48,25 +53,25 @@ class CardConnection:
             CardResponseError: Card returned error response
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Response Status and Data
+            tuple[bytes, CardResponseStatus]: Response Data and Status
         """
 
         command_hex = command.hex(" ").upper()
         self.__logger.debug(f"SC <- {command_hex}")
 
-        status, data = self.__transmit(command)
-        status_type = status.status_type()
+        self.last_response_data, self.last_response_status = self.__transmit(command)
+        status_type = self.last_response_status.status_type()
 
-        sw_hex = format(status.sw, "04X")
-        if len(data) != 0:
-            data_hex = data.hex(" ").upper()
+        sw_hex = format(self.last_response_status.sw, "04X")
+        if len(self.last_response_data) != 0:
+            data_hex = self.last_response_data.hex(" ").upper()
             self.__logger.debug(f"SC -> {data_hex} - SW: {sw_hex} ({status_type.name})")
         else:
             self.__logger.debug(f"SC -> SW: {sw_hex} ({status_type.name})")
 
         if raise_error and status_type != CardResponseStatusType.NORMAL_END:
-            raise CardResponseError(status)
-        return status, data
+            raise CardResponseError(self.last_response_status)
+        return self.last_response_data, self.last_response_status
 
     def read_binary(
         self,
@@ -74,7 +79,7 @@ class CardConnection:
         offset: int = 0,
         limit: int | None = None,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """READ BINARY
 
         Args:
@@ -88,7 +93,7 @@ class CardConnection:
             ValueError: Invalid argument `offset`
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Response Status and Data
+            tuple[bytes, CardResponseStatus]: Response Data and Status
         """
 
         if limit is None:
@@ -115,7 +120,7 @@ class CardConnection:
         self,
         cla: int = 0x00,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """READ (ALL) BINARY
 
         Args:
@@ -127,14 +132,14 @@ class CardConnection:
             CardResponseError: Card returned error response
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Last Response Status and entire Data
+            tuple[bytes, CardResponseStatus]: Last Response Status and entire Data
         """
 
         if cla < 0x00 or 0xFF < cla:
             raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
 
         max_bulk_read_length = max_lc_le(self.allow_extended_apdu)
-        status, data = self.read_binary(cla=cla, offset=0x0000, raise_error=raise_error)
+        data, status = self.read_binary(cla=cla, offset=0x0000, raise_error=raise_error)
         chunk_data = data
         while len(chunk_data) == max_bulk_read_length:
             offset = len(data)
@@ -151,7 +156,7 @@ class CardConnection:
             if raise_error and status_type != CardResponseStatusType.NORMAL_END:
                 raise CardResponseError(status)
             data += chunk_data
-        return status, data
+        return data, status
 
     def read_record(
         self,
@@ -159,7 +164,7 @@ class CardConnection:
         cla: int = 0x00,
         limit: int | None = None,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """READ RECORD(S)
 
         Args:
@@ -172,7 +177,7 @@ class CardConnection:
             ValueError: Invalid argument `cla`
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Response Status and Data
+            tuple[bytes, CardResponseStatus]: Response Data and Status
         """
 
         if limit is None:
@@ -195,7 +200,7 @@ class CardConnection:
         self,
         cla: int = 0x00,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """READ (ALL) RECORD
 
         Args:
@@ -207,7 +212,7 @@ class CardConnection:
             CardResponseError: Card returned error response
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Last Response Status and entire Data
+            tuple[bytes, CardResponseStatus]: Last Response Status and entire Data
         """
 
         if cla < 0x00 or 0xFF < cla:
@@ -225,7 +230,7 @@ class CardConnection:
             if raise_error and status_type != CardResponseStatusType.NORMAL_END:
                 raise CardResponseError(status)
             data += chunk_data
-        return status, data
+        return data, status
 
     def select_df(
         self,
@@ -233,7 +238,7 @@ class CardConnection:
         fci: FciLiteral = False,
         cla: int = 0x00,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """SELECT FILE (DF)
 
         Args:
@@ -246,11 +251,14 @@ class CardConnection:
             ValueError: Invalid argument `cla`
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Response Status and Data
+            tuple[bytes, CardResponseStatus]: Response Data and Status
         """
 
         if cla < 0x00 or 0xFF < cla:
             raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
+
+        self.selected_df = df_id
+        self.selected_ef = None
 
         command = CommandApdu(cla, 0xA4, 0x04, 0x0C, data=df_id, extended=False)
         if fci == "first":
@@ -266,7 +274,7 @@ class CardConnection:
         ef_id: bytes,
         cla: int = 0x00,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """SELECT FILE (EF)
 
         Args:
@@ -279,13 +287,15 @@ class CardConnection:
             ValueError: Invalid argument `ef_id`
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Response Status and Data
+            tuple[bytes, CardResponseStatus]: Response Data and Status
         """
 
         if cla < 0x00 or 0xFF < cla:
             raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
         if len(ef_id) != 2:
             raise ValueError("Argument `ef_id` length must be 2.")
+
+        self.selected_ef = ef_id
 
         command = CommandApdu(cla, 0xA4, 0x02, 0x0C, data=ef_id, extended=False)
         return self.transmit(command.to_bytes(), raise_error=raise_error)
@@ -295,7 +305,7 @@ class CardConnection:
         key: bytes | None = None,
         cla: int = 0x00,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """VERIFY
 
         Args:
@@ -307,7 +317,7 @@ class CardConnection:
             ValueError: Invalid argument `cla`
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Response Status and Data
+            tuple[bytes, CardResponseStatus]: Response Data and Status
         """
 
         if cla < 0x00 or 0xFF < cla:
@@ -322,7 +332,7 @@ class CardConnection:
         response_length: int | None = None,
         cla: int = 0x00,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """INTERNAL AUTHENTICATE
 
         Args:
@@ -335,7 +345,7 @@ class CardConnection:
             ValueError: Invalid argument `cla`
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Response Status and Data
+            tuple[bytes, CardResponseStatus]: Response Data and Status
         """
 
         if response_length is None:
@@ -354,7 +364,7 @@ class CardConnection:
         authenticate_code: bytes | None = None,
         cla: int = 0x00,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """EXTERNAL AUTHENTICATE
 
         Args:
@@ -366,7 +376,7 @@ class CardConnection:
             ValueError: Invalid argument `cla`
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Response Status and Data
+            tuple[bytes, CardResponseStatus]: Response Data and Status
         """
 
         if cla < 0x00 or 0xFF < cla:
@@ -383,7 +393,7 @@ class CardConnection:
         simplified_encoding: bool = False,
         cla: int = 0x00,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """GET DATA
 
         Args:
@@ -397,7 +407,7 @@ class CardConnection:
             ValueError: Invalid argument `tag`
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Response Status and Data
+            tuple[bytes, CardResponseStatus]: Response Data and Status
         """
         if cla < 0x00:
             raise ValueError("Argument `cla` must be greater than or equal 0x00.")
@@ -461,7 +471,7 @@ class CardConnection:
         self,
         input: bytes,
         raise_error: bool = True,
-    ) -> tuple[CardResponseStatus, bytes]:
+    ) -> tuple[bytes, CardResponseStatus]:
         """JPKI Sign (PERFORM SECURITY OPERATION)
 
         Args:
@@ -469,7 +479,7 @@ class CardConnection:
             raise_error (bool, optional): Raise error when card error response returned. Defaults to True.
 
         Returns:
-            tuple[CardResponseStatus, bytes]: Response Status and Data
+            tuple[bytes, CardResponseStatus]: Response Data and Status
         """
 
         command = CommandApdu(
@@ -496,11 +506,11 @@ def create_card_connection(
 
         def transmit(
             command: bytes | bytearray,
-        ) -> tuple[CardResponseStatus, bytes]:
+        ) -> tuple[bytes, CardResponseStatus]:
             data, sw1, sw2 = connection.transmit(list(command))
             sw = sw1 << 8 | sw2
             response_status = CardResponseStatus(sw)
-            return response_status, bytes(data)
+            return bytes(data), response_status
 
         return CardConnection(transmit, allow_extended_apdu=allow_extended_apdu)
 
@@ -508,11 +518,11 @@ def create_card_connection(
 
         def transmit(
             command: bytes | bytearray,
-        ) -> tuple[CardResponseStatus, bytes]:
+        ) -> tuple[bytes, CardResponseStatus]:
             *data, sw1, sw2 = connection.transceive(command)
             sw = sw1 << 8 | sw2
             response_status = CardResponseStatus(sw)
-            return response_status, bytes(data)
+            return bytes(data), response_status
 
         return CardConnection(
             transmit,
