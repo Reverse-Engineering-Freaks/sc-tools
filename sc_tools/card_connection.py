@@ -20,6 +20,9 @@ class CardConnection:
         transmit: Callable[[bytes], tuple[bytes, CardResponseStatus]],
         allow_extended_apdu=False,
         identifier: bytes | None = None,
+        transmit_callback: (
+            Callable[[bytes, bytes, CardResponseStatus], None] | None
+        ) = None,
     ) -> None:
         """Constructor
 
@@ -27,6 +30,7 @@ class CardConnection:
             transmit (Callable[[bytes], tuple[bytes, CardResponseStatus]]): Transmit function
             allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
             identifier (bytes | None, optional): Identifier for NFC. Defaults to None.
+            transmit_callback (Callable[[bytes, bytes, CardResponseStatus], None] | None, Optional): Transmit callback. Defaults to None.
         """
 
         self.__logger = logging.getLogger(__name__)
@@ -34,6 +38,7 @@ class CardConnection:
         self.__transmit = transmit
         self.allow_extended_apdu = allow_extended_apdu
         self.identifier = identifier
+        self.transmit_callback = transmit_callback
 
         self.last_response_status: CardResponseStatus | None = None
         self.last_response_data: bytes = b""
@@ -60,6 +65,10 @@ class CardConnection:
         self.__logger.debug(f"SC <- {command_hex}")
 
         self.last_response_data, self.last_response_status = self.__transmit(command)
+        if self.transmit_callback is not None:
+            self.transmit_callback(
+                command, self.last_response_data, self.last_response_status
+            )
         status_type = self.last_response_status.status_type()
 
         sw_hex = format(self.last_response_status.sw, "04X")

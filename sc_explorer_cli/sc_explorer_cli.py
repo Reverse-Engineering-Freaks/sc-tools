@@ -1,5 +1,6 @@
 """SC Explorer CLI"""
 
+import datetime
 import fire
 import logging
 import os
@@ -25,12 +26,13 @@ from sc_tools.readers import (
 
 
 class ScExplorerCli:
-    """SC Explorer CLI
+    """Constructor
 
     Args:
         nfc (bool, optional): Use NFC reader. Defaults to False.
         reader (str | int, optional): Reader descriptor. Reader name or index in list. Defaults to 0.
-        allow_extended_apdu (bool, optional): Allow Extended APDU
+        allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
+        disable_transceive_log (bool, optional): Disable transceive log (not system log). Defaults to False.
         log_level (str, optional): Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
 
     Raises:
@@ -52,7 +54,12 @@ class ScExplorerCli:
         )
 
     def __init__(
-        self, nfc=False, reader=0, allow_extended_apdu=False, log_level="INFO"
+        self,
+        nfc=False,
+        reader=0,
+        allow_extended_apdu=False,
+        disable_transceive_log=False,
+        log_level="INFO",
     ) -> None:
         """Constructor
 
@@ -60,11 +67,13 @@ class ScExplorerCli:
             nfc (bool, optional): Use NFC reader. Defaults to False.
             reader (str | int, optional): Reader descriptor. Reader name or index in list. Defaults to 0.
             allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
+            disable_transceive_log (bool, optional): Disable transceive log (not system log). Defaults to False.
             log_level (str, optional): Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
 
         Raises:
             ValueError: Invalid argument `nfc`
             ValueError: Invalid argument `reader`
+            ValueError: Invalid argument `disable_transceive_log`
         """
 
         ScExplorerCli.__config_logger(log_level)
@@ -80,8 +89,11 @@ class ScExplorerCli:
             raise ValueError("Argument `reader` must be str or int.")
         if not isinstance(allow_extended_apdu, bool):
             raise ValueError("Argument `allow_extended_apdu` must be bool.")
+        if not isinstance(disable_transceive_log, bool):
+            raise ValueError("Argument `disable_transceive_log` must be bool.")
 
         if reader is None:
+            # List reader
             if nfc:
                 readers = list_contactless_reader()
                 for i, reader in enumerate(readers):
@@ -105,6 +117,40 @@ class ScExplorerCli:
         self.__connection = create_card_connection(
             connection, allow_extended_apdu=allow_extended_apdu
         )
+
+        # Transceive log
+        if not disable_transceive_log:
+            transceive_log_filename = (
+                "transceive_"
+                + datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+                + ".log"
+            )
+            self.transceive_log_file = open(transceive_log_filename, "a")
+
+            def transmit_callback(
+                command: bytes,
+                response_data: bytes,
+                response_status: CardResponseStatus,
+            ) -> None:
+                now = datetime.datetime.now().isoformat()
+                self.transceive_log_file.write(f"[{now}]\n")
+                self.transceive_log_file.write(f"< {command.hex(' ').upper()}\n")
+                self.transceive_log_file.write("> ")
+                if len(response_data) != 0:
+                    self.transceive_log_file.write(
+                        f"{response_data.hex('' '').upper()} "
+                    )
+                sw_bytes = response_status.sw.to_bytes(length=2, byteorder="big")
+                self.transceive_log_file.write(f"{sw_bytes.hex(' ').upper()} \n")
+                self.transceive_log_file.write(
+                    f"SW: 0x{format(response_status.sw, '04X')} "
+                )
+                self.transceive_log_file.write(
+                    f"({response_status.status_type().name})\n"
+                )
+                self.transceive_log_file.write("\n")
+
+            self.__connection.transmit_callback = transmit_callback
 
     def __str__(self) -> str:
         return self.__last_response_to_str()
