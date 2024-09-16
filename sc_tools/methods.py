@@ -227,22 +227,19 @@ def attribute_ef(
     if status_type == CardResponseStatusType.REFERENCED_IEF_LOCKED:
         return CardFileAttribute.IEF_VERIFY_KEY | CardFileAttribute.LOCKED
 
-    # # IEF/INTERNAL_AUTHENTICATE_KEY
-    # status, data = connection.internal_authenticate(
-    #     b"\x00", cla, raise_error=False
-    # )
-    # status_type = status.status_type()
-    # if status_type == CardResponseStatusType.VERIFICATION_UNMATCHING:
-    #     ef_attribute = CardFileAttribute.IEF_INTERNAL_AUTHENTICATE_KEY
-    #     if status.verification_remaining() == 0:
-    #         ef_attribute |= CardFileAttribute.LOCKED
-    #     return ef_attribute
+    # IEF/INTERNAL_AUTHENTICATE_KEY
+    status, data = connection.internal_authenticate(
+        b"\x00\x00\x00\x00\x00\x00\x00\x00", cla=cla, raise_error=False
+    )
+    status_type = status.status_type()
+    if status_type == CardResponseStatusType.NORMAL_END:
+        ef_attribute |= CardFileAttribute.IEF_INTERNAL_AUTHENTICATE_KEY
 
     # IEF/EXTERNAL_AUTHENTICATE_KEY
     status, data = connection.external_authenticate(None, cla=cla, raise_error=False)
     status_type = status.status_type()
     if status_type == CardResponseStatusType.VERIFICATION_UNMATCHING:
-        ef_attribute = CardFileAttribute.IEF_EXTERNAL_AUTHENTICATE_KEY
+        ef_attribute |= CardFileAttribute.IEF_EXTERNAL_AUTHENTICATE_KEY
         if status.verification_remaining() is None:
             ef_attribute |= CardFileAttribute.VERIFICATION_UNLIMITED
         if status.verification_remaining() == 0:
