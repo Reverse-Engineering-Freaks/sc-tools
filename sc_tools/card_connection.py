@@ -243,7 +243,7 @@ class CardConnection:
 
         Args:
             df_id (bytes): DF Ientifier
-            fci (bool, optional): Get File Control Information
+            fci (FciLiteral, optional): Get File Control Information. Defaults to False.
             cla (int, optional): CLA. Defaults to 0x00.
             raise_error (bool, optional): Raise error when card error response returned. Defaults to True.
 
@@ -337,7 +337,7 @@ class CardConnection:
 
         Args:
             challenge (bytes): Challenge
-            response_length (int, Optional): Response length. Defaults to None.
+            response_length (int | None, Optional): Response length. Defaults to None.
             cla (int, optional): CLA. Defaults to 0x00.
             raise_error (bool, optional): Raise error when card error response returned. Defaults to True.
 
