@@ -110,6 +110,37 @@ class CardResponseStatus:
             return
         return self.sw & 0x000F
 
+    def is_cla_valid(self) -> bool:
+        """Is CLA valid
+
+        Returns:
+            bool: True if CLA is valid, else False
+        """
+
+        return self.sw & 0xFF00 != 0x6800 and self.sw & 0xFF00 != 0x6E00
+
+    def is_cla_ins_valid(self) -> bool:
+        """Is CLA-INS valid
+
+        Returns:
+            bool: True if CLA-INS valid, else False
+        """
+
+        return self.is_cla_valid() and self.sw & 0xFF00 != 0x6D00
+
+    def is_p1_p2_valid(self) -> bool:
+        """Is P1-P2 valid
+
+        Returns:
+            bool: True if CLA-INS and P1-P2 valid, else True
+        """
+
+        status_type = self.status_type()
+        return (
+            self.is_cla_ins_valid()
+            and status_type != CardResponseStatusType.INCORRECT_P1_P2_VALUE
+        )
+
 
 class CardResponseError(Exception):
     """Card Response Error"""

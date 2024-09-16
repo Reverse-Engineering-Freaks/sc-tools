@@ -52,24 +52,6 @@ def list_cla_ins(
         list[tuple[int, int, CardResponseStatusType]]: List of valid CLA-INS and Response Status
     """
 
-    def is_valid_cla(status: CardResponseStatus) -> bool:
-        status_type = status.status_type()
-        return (
-            status_type != CardResponseStatusType.CLA_FEATURE_NOT_PROVIDED
-            and status_type != CardResponseStatusType.CLASS_NOT_PROVIDED
-        )
-
-    def is_valid_cla_ins(status: CardResponseStatus):
-        status_type = status.status_type()
-        return (
-            is_valid_cla(status)
-            and status_type != CardResponseStatusType.INS_NOT_PROVIDED
-            and status_type
-            != CardResponseStatusType.ACCESS_FEATURE_WITH_THE_SPECIFIED_LOGICAL_CHANNEL_NUMBER_NOT_PROVIDED
-            and status_type
-            != CardResponseStatusType.SECURE_MESSAGING_FEATURE_NOT_PROVIDED
-        )
-
     if cla_start < 0x00 or 0x100 < cla_start:
         raise ValueError(
             "Argument `cla_start` out of range. (0x00 <= cla_start <= 0x100)"
@@ -90,9 +72,9 @@ def list_cla_ins(
                 cla, ins, 0x00, 0x00, extended=connection.allow_extended_apdu
             )
             status, data = connection.transmit(command.to_bytes(), raise_error=False)
-            if not is_valid_cla(status):
+            if not status.is_cla_valid():
                 break
-            if not is_valid_cla_ins(status):
+            if not status.is_cla_ins_valid():
                 continue
             cla_hex = format(cla, "02X")
             ins_hex = format(ins, "02X")
@@ -137,10 +119,6 @@ def list_p1_p2(
         list[tuple[int, int, CardResponseStatusType]]: List of valid P1-P2 and Response Status
     """
 
-    def is_valid_p1_p2(status: CardResponseStatus):
-        status_type = status.status_type()
-        return status_type != CardResponseStatusType.INCORRECT_P1_P2_VALUE
-
     if cla < 0x00 or 0xFF < cla:
         raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
     if ins < 0x00 or 0xFF < ins:
@@ -166,8 +144,10 @@ def list_p1_p2(
                 cla, ins, p1, p2, extended=connection.allow_extended_apdu
             )
             status, data = connection.transmit(command.to_bytes(), raise_error=False)
+            if not status.is_cla_ins_valid():
+                raise RuntimeError("Invalid CLA-INS.")
             status_type = status.status_type()
-            if is_valid_p1_p2(status):
+            if status.is_p1_p2_valid():
                 p1_hex = format(p1, "02X")
                 p2_hex = format(p2, "02X")
                 sw_hex = format(status.sw, "04X")
@@ -180,7 +160,7 @@ def list_p1_p2(
             command.le = "max"
             status, data = connection.transmit(command.to_bytes(), raise_error=False)
             status_type = status.status_type()
-            if is_valid_p1_p2(status):
+            if status.is_p1_p2_valid():
                 p1_hex = format(p1, "02X")
                 p2_hex = format(p2, "02X")
                 sw_hex = format(status.sw, "04X")
@@ -334,6 +314,8 @@ def list_ef(
             continue
         ef_id_bytes = ef_id.to_bytes(length=2, byteorder="big")
         status, data = connection.select_ef(ef_id_bytes, cla=cla, raise_error=False)
+        if not status.is_p1_p2_valid():
+            raise RuntimeError("Cannot list EF in current DF.")
         status_type = status.status_type()
         if (
             status_type == CardResponseStatusType.NORMAL_END
@@ -379,6 +361,8 @@ def list_do(
     for tag in tqdm(range(0x01, 0xFF), desc="List Data Object (1 byte tag)"):
         tag_bytes = tag.to_bytes(length=1)
         status, data = connection.get_data(tag_bytes, cla=cla, raise_error=False)
+        if not status.is_p1_p2_valid():
+            raise RuntimeError("Cannot list DO in current DF.")
         status_type = status.status_type()
         if (
             status_type == CardResponseStatusType.NORMAL_END
@@ -395,6 +379,8 @@ def list_do(
         status, data = connection.get_data(
             tag_bytes, simplified_encoding=True, cla=cla, raise_error=False
         )
+        if not status.is_p1_p2_valid():
+            raise RuntimeError("Cannot list DO in current DF.")
         status_type = status.status_type()
         if (
             status_type == CardResponseStatusType.NORMAL_END
@@ -411,6 +397,8 @@ def list_do(
     for tag in tqdm(range(0x1F1F, 0x10000), desc="List Data Object (2 byte tag)"):
         tag_bytes = tag.to_bytes(length=2, byteorder="big")
         status, data = connection.get_data(tag_bytes, cla=cla, raise_error=False)
+        if not status.is_p1_p2_valid():
+            raise RuntimeError("Cannot list DO in current DF.")
         status_type = status.status_type()
         if (
             status_type == CardResponseStatusType.NORMAL_END
@@ -465,6 +453,8 @@ def search_df(
         found_callback: Callable[[bytes], None] | None = None,
     ):
         status, data = connection.select_df(partial_df_id, cla=cla, raise_error=False)
+        if not status.is_p1_p2_valid():
+            raise RuntimeError("Cannot search DF on this card.")
         status_type = status.status_type()
         if status_type != CardResponseStatusType.NORMAL_END:
             # No RID
