@@ -457,7 +457,7 @@ class ScExplorerCli:
         return self
 
     def list_p1_p2(
-        self, cla, ins, p1_start=0x00, p1_end=0x100, p2_start=0x00, p2_end=0x100
+        self, cla, ins, data=None, p1_start=0x00, p1_end=0x100, p2_start=0x00, p2_end=0x100
     ) -> Self:
         """List valid P1-P2
 
@@ -485,6 +485,8 @@ class ScExplorerCli:
             raise ValueError("Argument `cla` must be int.")
         if not isinstance(ins, int):
             raise ValueError("Argument `ins` must be int.")
+        if not isinstance(data, str):
+            raise ValueError("Argument `data` must be str.")
         if not isinstance(p1_start, int):
             raise ValueError("Argument `p1_start` must be int.")
         if not isinstance(p1_end, int):
@@ -494,8 +496,12 @@ class ScExplorerCli:
         if not isinstance(p2_end, int):
             raise ValueError("Argument `p2_end` must be int.")
 
+        data_bytes = None
+        if data is not None:
+            data = data.replace(" ", "")
+            data_bytes = bytes.fromhex(data)
         p1_p2_list = list_p1_p2(
-            self.__connection, cla, ins, p1_start, p1_end, p2_start, p2_end
+            self.__connection, cla, ins, data_bytes, p1_start, p1_end, p2_start, p2_end
         )
 
         return self

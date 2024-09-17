@@ -68,6 +68,9 @@ def list_cla_ins(
     cla_ins_list: list[tuple[int, int, CardResponseStatusType]] = []
     for cla in tqdm(range(cla_start, cla_end), desc="List valid CLA-INS"):
         for ins in range(ins_start, ins_end):
+            cla_hex = format(cla, "02X")
+            ins_hex = format(ins, "02X")
+            # No Le
             command = CommandApdu(
                 cla, ins, 0x00, 0x00, extended=connection.allow_extended_apdu
             )
@@ -76,14 +79,23 @@ def list_cla_ins(
                 break
             if not status.is_cla_ins_valid():
                 continue
-            cla_hex = format(cla, "02X")
-            ins_hex = format(ins, "02X")
+            status_type = status.status_type()
+            if (
+                status_type == CardResponseStatusType.INCORRECT_LC_LE_FIELD
+                or status_type == CardResponseStatusType.LC_VALUE_CONFLICTING_P1_P2
+            ):
+                # Le=MAX
+                command.le = "max"
+                data, status = connection.transmit(
+                    command.to_bytes(), raise_error=False
+                )
             sw_hex = format(status.sw, "04X")
             status_type = status.status_type()
             tqdm.write(
-                f"CLA {cla_hex}, INS {ins_hex} found with status {sw_hex} ({status_type})."
+                f"CLA {cla_hex}, INS {ins_hex} found with status {sw_hex} ({status_type.name})."
             )
             cla_ins_list.append((cla, ins, status))
+
     return cla_ins_list
 
 
@@ -91,6 +103,7 @@ def list_p1_p2(
     connection: CardConnection,
     cla: int,
     ins: int,
+    data: bytes | None = None,
     p1_start: int = 0x00,
     p1_end: int = 0x100,
     p2_start: int = 0x00,
@@ -139,33 +152,82 @@ def list_p1_p2(
     p1_p2_list: list[tuple[bytes, CardResponseStatusType]] = []
     for p1 in tqdm(range(p1_start, p1_end), desc="List valid P1-P2"):
         for p2 in range(p2_start, p2_end):
-            # No Le
+            p1_hex = format(p1, "02X")
+            p2_hex = format(p2, "02X")
+            # No Data, No Le
             command = CommandApdu(
                 cla, ins, p1, p2, extended=connection.allow_extended_apdu
             )
-            data, status = connection.transmit(command.to_bytes(), raise_error=False)
+            response_data, status = connection.transmit(
+                command.to_bytes(), raise_error=False
+            )
             if not status.is_cla_ins_valid():
-                raise RuntimeError("Invalid CLA-INS.")
-            status_type = status.status_type()
+                # raise RuntimeError("Invalid CLA-INS.")
+                continue
+            valid_p1_p2_detected_status = None
             if status.is_p1_p2_valid():
-                p1_hex = format(p1, "02X")
-                p2_hex = format(p2, "02X")
+                valid_p1_p2_detected_status = status
+            if status.is_lc_le_valid():
+                status_type = status.status_type()
                 sw_hex = format(status.sw, "04X")
                 tqdm.write(
-                    f"P1 {p1_hex}, P2 {p2_hex}, No Le found with status {sw_hex} ({status_type})."
+                    f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
                 )
                 p1_p2_list.append((p1, p2, status))
                 continue
-            # Le=MAX
-            command.le = "max"
-            data, status = connection.transmit(command.to_bytes(), raise_error=False)
-            status_type = status.status_type()
+            # Data, No Le
+            command.data = data
+            command.le = 0
+            response_data, status = connection.transmit(
+                command.to_bytes(), raise_error=False
+            )
             if status.is_p1_p2_valid():
-                p1_hex = format(p1, "02X")
-                p2_hex = format(p2, "02X")
+                valid_p1_p2_detected_status = status
+            if status.is_lc_le_valid():
+                status_type = status.status_type()
                 sw_hex = format(status.sw, "04X")
                 tqdm.write(
-                    f"P1 {p1_hex}, P2 {p2_hex}, Le=MAX found with status {sw_hex} ({status_type})."
+                    f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
+                )
+                p1_p2_list.append((p1, p2, status))
+                continue
+            # No Data, Le=MAX
+            command.data = None
+            command.le = "max"
+            response_data, status = connection.transmit(
+                command.to_bytes(), raise_error=False
+            )
+            if status.is_p1_p2_valid():
+                valid_p1_p2_detected_status = status
+            if status.is_lc_le_valid():
+                status_type = status.status_type()
+                sw_hex = format(status.sw, "04X")
+                tqdm.write(
+                    f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
+                )
+                p1_p2_list.append((p1, p2, status))
+                continue
+            # Data, Le=MAX
+            command.data = data
+            command.le = "max"
+            response_data, status = connection.transmit(
+                command.to_bytes(), raise_error=False
+            )
+            if status.is_p1_p2_valid():
+                valid_p1_p2_detected_status = status
+            if status.is_lc_le_valid():
+                status_type = status.status_type()
+                sw_hex = format(status.sw, "04X")
+                tqdm.write(
+                    f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
+                )
+                p1_p2_list.append((p1, p2, status))
+                continue
+            if valid_p1_p2_detected_status is not None:
+                status_type = valid_p1_p2_detected_status.status_type()
+                sw_hex = format(valid_p1_p2_detected_status.sw, "04X")
+                tqdm.write(
+                    f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
                 )
                 p1_p2_list.append((p1, p2, status))
                 continue
