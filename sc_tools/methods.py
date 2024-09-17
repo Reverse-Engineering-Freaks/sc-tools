@@ -314,7 +314,7 @@ def list_ef(
             continue
         ef_id_bytes = ef_id.to_bytes(length=2, byteorder="big")
         data, status = connection.select_ef(ef_id_bytes, cla=cla, raise_error=False)
-        if not status.is_p1_p2_valid():
+        if not status.is_cla_ins_valid():
             raise RuntimeError("Cannot list EF in current DF.")
         status_type = status.status_type()
         if (
@@ -361,7 +361,7 @@ def list_do(
     for tag in tqdm(range(0x01, 0xFF), desc="List Data Object (1 byte tag)"):
         tag_bytes = tag.to_bytes(length=1)
         data, status = connection.get_data(tag_bytes, cla=cla, raise_error=False)
-        if not status.is_p1_p2_valid():
+        if not status.is_cla_ins_valid():
             raise RuntimeError("Cannot list DO in current DF.")
         status_type = status.status_type()
         if (
@@ -379,7 +379,7 @@ def list_do(
         data, status = connection.get_data(
             tag_bytes, simplified_encoding=True, cla=cla, raise_error=False
         )
-        if not status.is_p1_p2_valid():
+        if not status.is_cla_ins_valid():
             raise RuntimeError("Cannot list DO in current DF.")
         status_type = status.status_type()
         if (
@@ -397,7 +397,7 @@ def list_do(
     for tag in tqdm(range(0x1F1F, 0x10000), desc="List Data Object (2 byte tag)"):
         tag_bytes = tag.to_bytes(length=2, byteorder="big")
         data, status = connection.get_data(tag_bytes, cla=cla, raise_error=False)
-        if not status.is_p1_p2_valid():
+        if not status.is_cla_ins_valid():
             raise RuntimeError("Cannot list DO in current DF.")
         status_type = status.status_type()
         if (
@@ -453,7 +453,7 @@ def search_df(
         found_callback: Callable[[bytes], None] | None = None,
     ):
         data, status = connection.select_df(partial_df_id, cla=cla, raise_error=False)
-        if not status.is_p1_p2_valid():
+        if not status.is_cla_ins_valid():
             raise RuntimeError("Cannot search DF on this card.")
         status_type = status.status_type()
         if status_type != CardResponseStatusType.NORMAL_END:
