@@ -350,7 +350,7 @@ class ScExplorerCli:
         """VERIFY
 
         Args:
-            key (bytes | None, optional): Key. Defaults to None.
+            key (bytes | None, optional): Key as ASCII string. Defaults to None.
             cla (hexadecimal, optional): CLA. Defaults to 0x00.
 
         Raises:
@@ -377,7 +377,7 @@ class ScExplorerCli:
         """GET DATA
 
         Args:
-            tag (bytes): Tag
+            tag (bytes): Tag as hex string
             simplified_encoding (bool, optional): Simplified encoding. Defaults to False.
             cla (hexadecimal, optional): CLA. Defaults to 0x00.
 
@@ -464,6 +464,7 @@ class ScExplorerCli:
         Args:
             cla (int): CLA
             ins (int): INS
+            data (str | None, optional): Data as hex string. Defaults to None.
             p1_start (int, optional): P1 start. Defaults to 0x00.
             p1_end (int, optional): P1 end. Defaults to 0x100.
             p2_start (int, optional): P2 start. Defaults to 0x00.
