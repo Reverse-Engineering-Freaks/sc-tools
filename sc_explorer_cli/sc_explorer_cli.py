@@ -551,10 +551,10 @@ class ScExplorerCli:
             if CardFileAttribute.WEF_TRANSPARENT in ef_attribute:
                 file_name += "_TRANSPARENT"
                 self.__connection.select_ef(ef_id, cla=cla)
-                status, data = self.__connection.read_all_binary(cla=cla)
+                data, status = self.__connection.read_all_binary(cla=cla)
             if CardFileAttribute.WEF_RECORD in ef_attribute:
                 self.__connection.select_ef(ef_id, cla=cla)
-                status, data = self.__connection.read_record(cla=cla)
+                data, status = self.__connection.read_record(cla=cla)
                 file_name += "_RECORD"
             if data is None:
                 return

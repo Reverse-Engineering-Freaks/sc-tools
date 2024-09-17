@@ -152,7 +152,7 @@ class CardConnection:
         chunk_data = data
         while len(chunk_data) == max_bulk_read_length:
             offset = len(data)
-            status, chunk_data = self.read_binary(
+            chunk_data, status = self.read_binary(
                 cla=cla, offset=offset, raise_error=False
             )
             status_type = status.status_type()
@@ -229,7 +229,7 @@ class CardConnection:
 
         data = b""
         for record_number in range(0x01, 0x100):
-            status, chunk_data = self.read_record(
+            chunk_data, status = self.read_record(
                 record_number, cla=cla, raise_error=False
             )
             status_type = status.status_type()
