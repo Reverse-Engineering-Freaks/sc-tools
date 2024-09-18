@@ -514,19 +514,14 @@ def search_df(
         partial_df_id: bytes,
         found_callback: Callable[[bytes], None] | None = None,
     ):
-        data, status = connection.select_df(partial_df_id, cla=cla, raise_error=False)
-        if not status.is_cla_ins_valid():
-            raise RuntimeError("Cannot search DF on this card.")
-        status_type = status.status_type()
-        if status_type != CardResponseStatusType.NORMAL_END:
-            # No RID
-            return
         data, status = connection.select_df(
             partial_df_id, fci="first", cla=cla, raise_error=False
         )
+        if not status.is_p1_p2_valid():
+            raise RuntimeError("Cannot search DF on this card.")
         status_type = status.status_type()
         if status_type != CardResponseStatusType.NORMAL_END:
-            # Cannot get FCI
+            # No DF
             return
         df_id = df_id_by_fci(data)
         if df_id is None:

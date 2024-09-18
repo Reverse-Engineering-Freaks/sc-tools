@@ -136,7 +136,12 @@ class CardResponseStatus:
         """
 
         status_type = self.status_type()
-        return self.is_cla_ins_valid() and self.sw & 0xFF00 != 0x6A00
+        return (
+            self.is_cla_ins_valid()
+            and status_type != CardResponseStatusType.INCORRECT_PARAMETER_P1_P2
+            and status_type != CardResponseStatusType.FEATURE_NOT_PROVIDED
+            and status_type != CardResponseStatusType.INCORRECT_P1_P2_VALUE
+        )
 
     def is_lc_le_valid(self) -> bool:
         """Is Lc-Le valid
