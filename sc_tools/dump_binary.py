@@ -46,7 +46,7 @@ def dump_binary(data: bytes, chunk_size=16) -> str:
         output += __dump_binary_line(address, chunk, chunk_size)
 
     if fraction_length == 0:
-        return output
+        return output[:-1]
 
     address = chunk_size * chunk_count
     fraction: bytes = data[address : address + fraction_length]
