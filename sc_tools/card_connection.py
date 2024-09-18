@@ -18,6 +18,7 @@ class CardConnection:
     def __init__(
         self,
         transmit: Callable[[bytes], tuple[bytes, CardResponseStatus]],
+        auto_get_response: bool = True,
         allow_extended_apdu=False,
         identifier: bytes | None = None,
         transmit_callback: (
@@ -28,6 +29,7 @@ class CardConnection:
 
         Args:
             transmit (Callable[[bytes], tuple[bytes, CardResponseStatus]]): Transmit function
+            auto_get_response (bool, optional): Enable automatic getting remaining response data. Defaults to True.
             allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
             identifier (bytes | None, optional): Identifier for NFC. Defaults to None.
             transmit_callback (Callable[[bytes, bytes, CardResponseStatus], None] | None, Optional): Transmit callback. Defaults to None.
@@ -36,6 +38,7 @@ class CardConnection:
         self.__logger = logging.getLogger(__name__)
 
         self.__transmit = transmit
+        self.auto_get_response = auto_get_response
         self.allow_extended_apdu = allow_extended_apdu
         self.identifier = identifier
         self.transmit_callback = transmit_callback
@@ -62,24 +65,38 @@ class CardConnection:
         """
 
         command_hex = command.hex(" ").upper()
-        self.__logger.debug(f"SC <- {command_hex}")
+        self.__logger.debug(f"< {command_hex}")
 
         self.last_response_data, self.last_response_status = self.__transmit(command)
+
+        response_data = self.last_response_data + self.last_response_status.sw.to_bytes(
+            length=2, byteorder="big"
+        )
+        response_data_hex = response_data.hex(" ").upper()
+        sw_hex = format(self.last_response_status.sw, "04X")
+        status_type = self.last_response_status.status_type()
+        self.__logger.debug(f"> {response_data_hex}")
+        self.__logger.debug(f"SW: 0x{sw_hex} ({status_type.name})")
+
         if self.transmit_callback is not None:
             self.transmit_callback(
                 command, self.last_response_data, self.last_response_status
             )
-        status_type = self.last_response_status.status_type()
 
-        sw_hex = format(self.last_response_status.sw, "04X")
-        if len(self.last_response_data) != 0:
-            data_hex = self.last_response_data.hex(" ").upper()
-            self.__logger.debug(f"SC -> {data_hex} - SW: {sw_hex} ({status_type.name})")
-        else:
-            self.__logger.debug(f"SC -> SW: {sw_hex} ({status_type.name})")
-
-        if raise_error and status_type != CardResponseStatusType.NORMAL_END:
+        if (
+            raise_error
+            and status_type != CardResponseStatusType.NORMAL_END
+            and status_type
+            != CardResponseStatusType.NORMAL_END_WITH_REMAINING_DATA_LENGTH
+        ):
             raise CardResponseError(self.last_response_status)
+
+        if self.auto_get_response and self.last_response_status.data_remaining() != 0:
+            self.last_response_data, self.last_response_status = self.get_response(
+                recursive=False, cla=command[0], raise_error=raise_error
+            )
+            return self.last_response_data, self.last_response_status
+
         return self.last_response_data, self.last_response_status
 
     def read_binary(
@@ -396,6 +413,37 @@ class CardConnection:
         )
         return self.transmit(command.to_bytes(), raise_error=raise_error)
 
+    def get_response(
+        self,
+        limit: int | None = None,
+        recursive: bool = True,
+        cla: int = 0x00,
+        raise_error: bool = True,
+    ):
+        if limit is None:
+            limit = self.last_response_status.data_remaining()
+
+        if cla < 0x00 or 0xFF < cla:
+            raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
+
+        command = CommandApdu(
+            cla,
+            0xC0,
+            0x00,
+            0x00,
+            le=limit,
+            extended=self.allow_extended_apdu,
+        )
+        data, status = self.transmit(command.to_bytes())
+        while recursive and self.last_response_status.data_remaining() != 0:
+            command.le = self.last_response_status.data_remaining()
+            chunk_data, status = self.transmit(command.to_bytes(), raise_error=False)
+            status_type = status.status_type()
+            if raise_error and status_type != CardResponseStatusType.NORMAL_END:
+                raise CardResponseError(status)
+            data += chunk_data
+        return data, status
+
     def get_data(
         self,
         tag: bytes,
@@ -499,12 +547,14 @@ class CardConnection:
 
 def create_card_connection(
     connection: PyscardCardConnection | Type4Tag,
+    auto_get_response: bool = True,
     allow_extended_apdu: bool = False,
 ) -> CardConnection:
     """Create Card Connection
 
     Args:
         connection (PyscardCardConnection | Type4Tag): PC/SC connection or NFC Type 4 Tag connection
+        auto_get_response (bool, optional): Enable automatic getting remaining response data. Defaults to True.
         allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
 
     Returns:
@@ -521,7 +571,11 @@ def create_card_connection(
             response_status = CardResponseStatus(sw)
             return bytes(data), response_status
 
-        return CardConnection(transmit, allow_extended_apdu=allow_extended_apdu)
+        return CardConnection(
+            transmit,
+            auto_get_response=auto_get_response,
+            allow_extended_apdu=allow_extended_apdu,
+        )
 
     elif isinstance(connection, Type4Tag):
 
@@ -536,5 +590,6 @@ def create_card_connection(
         return CardConnection(
             transmit,
             allow_extended_apdu=allow_extended_apdu,
+            auto_get_response=auto_get_response,
             identifier=connection.identifier,
         )

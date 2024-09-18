@@ -94,6 +94,17 @@ class CardResponseStatus:
 
         return CardResponseStatusType.from_sw(self.sw)
 
+    def data_remaining(self) -> int:
+        """Get data remaining
+
+        Returns:
+            int: Data remaining in bytes
+        """
+
+        if self.sw & 0xFF00 != 0x6100:
+            return 0
+        return self.sw & 0x00FF
+
     def verification_remaining(self) -> int | None:
         """Get verification remaining
 

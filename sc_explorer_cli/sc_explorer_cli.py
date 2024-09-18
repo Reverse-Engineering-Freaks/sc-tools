@@ -32,6 +32,7 @@ class ScExplorerCli:
     Args:
         nfc (bool, optional): Use NFC reader. Defaults to False.
         reader (str | int, optional): Reader descriptor. Reader name or index in list. Defaults to 0.
+        auto_get_response (bool, optional): Enable automatic getting remaining response data. Defaults to True.
         allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
         disable_transceive_log (bool, optional): Disable transceive log (not system log). Defaults to False.
         log_level (str, optional): Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
@@ -58,6 +59,7 @@ class ScExplorerCli:
         self,
         nfc=False,
         reader=0,
+        auto_get_response=True,
         allow_extended_apdu=False,
         disable_transceive_log=False,
         log_level="INFO",
@@ -67,6 +69,7 @@ class ScExplorerCli:
         Args:
             nfc (bool, optional): Use NFC reader. Defaults to False.
             reader (str | int, optional): Reader descriptor. Reader name or index in list. Defaults to 0.
+            auto_get_response (bool, optional): Enable automatic getting remaining response data. Defaults to True.
             allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
             disable_transceive_log (bool, optional): Disable transceive log (not system log). Defaults to False.
             log_level (str, optional): Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
@@ -74,6 +77,7 @@ class ScExplorerCli:
         Raises:
             ValueError: Invalid argument `nfc`
             ValueError: Invalid argument `reader`
+            ValueError: Invalid argument `auto_get_response`
             ValueError: Invalid argument `allow_extended_apdu`
             ValueError: Invalid argument `disable_transceive_log`
         """
@@ -89,6 +93,8 @@ class ScExplorerCli:
             and not isinstance(reader, int)
         ):
             raise ValueError("Argument `reader` must be str or int.")
+        if not isinstance(auto_get_response, bool):
+            raise ValueError("Argument `auto_get_response` must be bool.")
         if not isinstance(allow_extended_apdu, bool):
             raise ValueError("Argument `allow_extended_apdu` must be bool.")
         if not isinstance(disable_transceive_log, bool):
@@ -117,7 +123,9 @@ class ScExplorerCli:
             self.__logger.info("Connected to card.")
 
         self.__connection = create_card_connection(
-            connection, allow_extended_apdu=allow_extended_apdu
+            connection,
+            auto_get_response=auto_get_response,
+            allow_extended_apdu=allow_extended_apdu,
         )
 
         # Transceive log
