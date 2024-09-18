@@ -93,9 +93,8 @@ class CardConnection:
 
         if self.auto_get_response and self.last_response_status.data_remaining() != 0:
             self.last_response_data, self.last_response_status = self.get_response(
-                recursive=False, cla=command[0], raise_error=raise_error
+                cla=command[0], raise_error=raise_error
             )
-            return self.last_response_data, self.last_response_status
 
         return self.last_response_data, self.last_response_status
 
@@ -416,12 +415,28 @@ class CardConnection:
     def get_response(
         self,
         limit: int | None = None,
-        recursive: bool = True,
         cla: int = 0x00,
         raise_error: bool = True,
-    ):
+    ) -> tuple[bytes, CardResponseStatus]:
+        """GET RESPONSE
+
+        Args:
+            limit (int | None, optional): Limit. Defaults to None.
+            cla (int, optional): _description_. Defaults to 0x00.
+            raise_error (bool, optional): Raise error when card error response returned. Defaults to True.
+
+        Raises:
+            ValueError: Invalid argument `cla`
+
+        Returns:
+            tuple[bytes, CardResponseStatus]: Response Data and Status
+        """
+
         if limit is None:
-            limit = self.last_response_status.data_remaining()
+            if self.last_response_status is None:
+                limit = "max"
+            else:
+                limit = self.last_response_status.data_remaining()
 
         if cla < 0x00 or 0xFF < cla:
             raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
@@ -434,15 +449,7 @@ class CardConnection:
             le=limit,
             extended=self.allow_extended_apdu,
         )
-        data, status = self.transmit(command.to_bytes())
-        while recursive and self.last_response_status.data_remaining() != 0:
-            command.le = self.last_response_status.data_remaining()
-            chunk_data, status = self.transmit(command.to_bytes(), raise_error=False)
-            status_type = status.status_type()
-            if raise_error and status_type != CardResponseStatusType.NORMAL_END:
-                raise CardResponseError(status)
-            data += chunk_data
-        return data, status
+        return self.transmit(command.to_bytes(), raise_error=raise_error)
 
     def get_data(
         self,

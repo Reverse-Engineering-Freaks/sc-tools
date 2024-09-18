@@ -381,6 +381,26 @@ class ScExplorerCli:
 
         return self
 
+    def get_response(self, cla=0x00) -> Self:
+        """GET RESPONSE
+
+        Args:
+            cla (hexadecimal, optional): CLA. Defaults to 0x00.
+
+        Raises:
+            ValueError: Invalid argument `cla`
+
+        Returns:
+            _Self: This instance
+        """
+
+        if not isinstance(cla, int):
+            raise ValueError("Argument `cla` must be int.")
+
+        self.__connection.get_response(cla=cla)
+
+        return self
+
     def get_data(self, tag: bytes, simplified_encoding=False, cla=0x00) -> Self:
         """GET DATA
 
