@@ -466,10 +466,8 @@ class CardConnection:
         Returns:
             tuple[bytes, CardResponseStatus]: Response Data and Status
         """
-        if cla < 0x00:
-            raise ValueError("Argument `cla` must be greater than or equal 0x00.")
-        if 0xFF < cla:
-            raise ValueError("Argument `cla` must be less than or equal 0xFF.")
+        if cla < 0x00 or 0xFF < cla:
+            raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
         if simplified_encoding:
             if len(tag) != 1:
                 raise ValueError(

@@ -465,7 +465,14 @@ class ScExplorerCli:
         return self
 
     def list_p1_p2(
-        self, cla, ins, data=None, p1_start=0x00, p1_end=0x100, p2_start=0x00, p2_end=0x100
+        self,
+        cla,
+        ins,
+        data=None,
+        p1_start=0x00,
+        p1_end=0x100,
+        p2_start=0x00,
+        p2_end=0x100,
     ) -> Self:
         """List valid P1-P2
 
