@@ -49,12 +49,16 @@ class CardConnection:
         self.selected_ef: bytes | None = None
 
     def transmit(
-        self, command: bytes, raise_error: bool = True
+        self,
+        command: bytes,
+        disable_get_response: bool = False,
+        raise_error: bool = True,
     ) -> tuple[bytes, CardResponseStatus]:
         """Transmit
 
         Args:
             command (bytes): Command
+            disable_get_response (bool, optional): Disable automatic GET RESPONSE
             raise_error (bool, optional): Raise error when card error response returned. Defaults to True.
 
         Raises:
@@ -91,8 +95,12 @@ class CardConnection:
         ):
             raise CardResponseError(self.last_response_status)
 
-        if self.auto_get_response and self.last_response_status.data_remaining() != 0:
-            self.last_response_data, self.last_response_status = self.get_response(
+        if (
+            self.auto_get_response
+            and not disable_get_response
+            and self.last_response_status.data_remaining() != 0
+        ):
+            self.last_response_data, self.last_response_status = self.get_all_response(
                 cla=command[0], raise_error=raise_error
             )
 
@@ -449,7 +457,36 @@ class CardConnection:
             le=limit,
             extended=self.allow_extended_apdu,
         )
-        return self.transmit(command.to_bytes(), raise_error=raise_error)
+        return self.transmit(
+            command.to_bytes(), disable_get_response=True, raise_error=raise_error
+        )
+
+    def get_all_response(
+        self,
+        cla: int = 0x00,
+        raise_error: bool = True,
+    ) -> tuple[bytes, CardResponseStatus]:
+        """GET (ALL) RESPONSE
+
+        Args:
+            cla (int, optional): CLA. Defaults to 0x00.
+            raise_error (bool, optional): Raise error. Defaults to True.
+
+        Raises:
+            ValueError: Invalid argument `cla`
+
+        Returns:
+            tuple[bytes, CardResponseStatus]: Response Data and Status
+        """
+
+        if cla < 0x00 or 0xFF < cla:
+            raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
+
+        data, status = self.get_response(cla=cla, raise_error=raise_error)
+        while self.last_response_status.data_remaining() != 0:
+            chunk_data, status = self.get_response(cla=cla, raise_error=raise_error)
+            data += chunk_data
+        return data, status
 
     def get_data(
         self,
