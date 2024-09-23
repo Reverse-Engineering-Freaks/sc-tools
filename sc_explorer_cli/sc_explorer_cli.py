@@ -549,7 +549,7 @@ class ScExplorerCli:
         cla=0x00,
         start=0x0000,
         end=0x10000,
-        dump_path=None,
+        dump_dir=None,
     ) -> Self:
         """List EF
 
@@ -557,13 +557,13 @@ class ScExplorerCli:
             cla (int, optional): CLA. Defaults to 0x00.
             start (int, optional): DF identifier start. Defaults to 0x0000.
             end (int, optional): DF identifier end. Defaults to 0x10000.
-            dump_path (str | None, optional): Set directory path to dump response data to file. Defaults to None.
+            dump_dir (str | None, optional): Response data dumping directory path. Defaults to None.
 
         Raises:
             ValueError: Invalid argument `cla`
             ValueError: Invalid argument `start`
             ValueError: Invalid argument `end`
-            ValueError: Invalid argument `dump_path`
+            ValueError: Invalid argument `dump_dir`
 
         Returns:
             Self: This instance
@@ -575,11 +575,11 @@ class ScExplorerCli:
             raise ValueError("Argument `start` must be int.")
         if not isinstance(end, int):
             raise ValueError("Argument `end` must be int.")
-        if dump_path is not None and not isinstance(dump_path, str):
-            raise ValueError("Argument `dump_path` must be str.")
+        if dump_dir is not None and not isinstance(dump_dir, str):
+            raise ValueError("Argument `dump_dir` must be str.")
 
         def found_callback(ef_id: bytes, ef_attribute: CardFileAttribute) -> None:
-            if dump_path is None:
+            if dump_dir is None:
                 return
 
             # Dump to file
@@ -605,7 +605,8 @@ class ScExplorerCli:
 
             file_name += ".bin"
 
-            file_path = os.path.join(dump_path, file_name)
+            file_path = os.path.join(dump_dir, file_name)
+            os.makedirs(dump_dir, exist_ok=True)
             with open(file_path, "wb") as file:
                 file.write(data)
 
@@ -622,17 +623,17 @@ class ScExplorerCli:
     def list_do(
         self,
         cla=0x00,
-        dump_path=None,
+        dump_dir=None,
     ) -> Self:
         """List Data Object
 
         Args:
-            cla (hexadecimal, optional): _description_. Defaults to 0x00.
-            dump_path (str | None, optional): Set path to dump response data to file. Defaults to None.
+            cla (hexadecimal, optional): CLA. Defaults to 0x00.
+            dump_dir (str | None, optional): Response data dumping directory path. Defaults to None.
 
         Raises:
             ValueError: Invalid argument `cla`
-            ValueError: Invalid argument `dump_path`
+            ValueError: Invalid argument `dump_dir`
 
         Returns:
             Self: This instance
@@ -640,11 +641,11 @@ class ScExplorerCli:
 
         if not isinstance(cla, int):
             raise ValueError("Argument `cla` must be int.")
-        if dump_path is not None and not isinstance(dump_path, str):
-            raise ValueError("Argument `dump_path` must be str.")
+        if dump_dir is not None and not isinstance(dump_dir, str):
+            raise ValueError("Argument `dump_dir` must be str.")
 
         def found_callback(tag: bytes, simplified_encoding: bool, data: bytes) -> None:
-            if dump_path is None:
+            if dump_dir is None:
                 return
 
             # Dump to file
@@ -658,7 +659,8 @@ class ScExplorerCli:
             else:
                 file_name += "_DO_"
             file_name += f"{tag.hex().upper()}.bin"
-            file_path = os.path.join(dump_path, file_name)
+            file_path = os.path.join(dump_dir, file_name)
+            os.makedirs(dump_dir, exist_ok=True)
             with open(file_path, "wb") as file:
                 file.write(data)
 
