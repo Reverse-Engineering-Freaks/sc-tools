@@ -61,7 +61,7 @@ class ScExplorerCli:
         reader=0,
         auto_get_response=True,
         allow_extended_apdu=False,
-        disable_transceive_log=False,
+        transceive_log_dir="./transceive_logs/",
         log_level="INFO",
     ) -> None:
         """Constructor
@@ -71,7 +71,7 @@ class ScExplorerCli:
             reader (str | int, optional): Reader descriptor. Reader name or index in list. Defaults to 0.
             auto_get_response (bool, optional): Enable automatic getting remaining response data. Defaults to True.
             allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
-            disable_transceive_log (bool, optional): Disable transceive log (not system log). Defaults to False.
+            transceive_log_dir (str | None, optional): Transceive log directory path. Defaults to "./transceive_logs/".
             log_level (str, optional): Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
 
         Raises:
@@ -97,8 +97,8 @@ class ScExplorerCli:
             raise ValueError("Argument `auto_get_response` must be bool.")
         if not isinstance(allow_extended_apdu, bool):
             raise ValueError("Argument `allow_extended_apdu` must be bool.")
-        if not isinstance(disable_transceive_log, bool):
-            raise ValueError("Argument `disable_transceive_log` must be bool.")
+        if transceive_log_dir is not None and not isinstance(transceive_log_dir, str):
+            raise ValueError("Argument `transceive_log_dir` must be str.")
 
         if reader is None:
             # List reader
@@ -129,12 +129,14 @@ class ScExplorerCli:
         )
 
         # Transceive log
-        if not disable_transceive_log:
-            transceive_log_filename = (
+        if transceive_log_dir is not None:
+            transceive_log_filename = os.path.join(
+                transceive_log_dir,
                 "transceive_"
                 + datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-                + ".log"
+                + ".log",
             )
+            os.makedirs(transceive_log_dir, exist_ok=True)
             self.transceive_log_file = open(transceive_log_filename, "a")
 
             def transmit_callback(
