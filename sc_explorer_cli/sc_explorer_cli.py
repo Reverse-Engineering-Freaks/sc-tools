@@ -34,7 +34,7 @@ class ScExplorerCli:
         reader (str | int, optional): Reader descriptor. Reader name or index in list. Defaults to 0.
         auto_get_response (bool, optional): Enable automatic getting remaining response data. Defaults to True.
         allow_extended_apdu (bool, optional): Allow Extended APDU. Defaults to False.
-        disable_transceive_log (bool, optional): Disable transceive log (not system log). Defaults to False.
+        transceive_log_dir (str | None, optional): Transceive log directory path. Defaults to "./transceive_logs/".
         log_level (str, optional): Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
 
     Raises:
@@ -79,7 +79,7 @@ class ScExplorerCli:
             ValueError: Invalid argument `reader`
             ValueError: Invalid argument `auto_get_response`
             ValueError: Invalid argument `allow_extended_apdu`
-            ValueError: Invalid argument `disable_transceive_log`
+            ValueError: Invalid argument `transceive_log_dir`
         """
 
         ScExplorerCli.__config_logger(log_level)
