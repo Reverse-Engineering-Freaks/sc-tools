@@ -263,6 +263,7 @@ class CardConnection:
             if raise_error and status_type != CardResponseStatusType.NORMAL_END:
                 raise CardResponseError(status)
             data += chunk_data
+        self.last_response_data = data
         return data, status
 
     def select_df(
@@ -486,6 +487,7 @@ class CardConnection:
         while self.last_response_status.data_remaining() != 0:
             chunk_data, status = self.get_response(cla=cla, raise_error=raise_error)
             data += chunk_data
+        self.last_response_data = data
         return data, status
 
     def get_data(
