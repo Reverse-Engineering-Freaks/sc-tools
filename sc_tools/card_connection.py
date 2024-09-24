@@ -189,6 +189,7 @@ class CardConnection:
             if raise_error and status_type != CardResponseStatusType.NORMAL_END:
                 raise CardResponseError(status)
             data += chunk_data
+        self.last_response_data = data
         return data, status
 
     def read_record(
