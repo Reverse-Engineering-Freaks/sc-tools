@@ -523,7 +523,7 @@ class ScExplorerCli:
             raise ValueError("Argument `cla` must be int.")
         if not isinstance(ins, int):
             raise ValueError("Argument `ins` must be int.")
-        if not isinstance(data, str):
+        if data is not None and not isinstance(data, str):
             raise ValueError("Argument `data` must be str.")
         if not isinstance(p1_start, int):
             raise ValueError("Argument `p1_start` must be int.")
