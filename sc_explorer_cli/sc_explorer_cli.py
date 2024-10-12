@@ -27,7 +27,7 @@ from sc_tools.readers import (
 
 
 class ScExplorerCli:
-    """Constructor
+    """SC Explorer CLI
 
     Args:
         nfc (bool, optional): Use NFC reader. Defaults to False.
@@ -64,7 +64,7 @@ class ScExplorerCli:
         transceive_log_dir="./transceive_logs/",
         log_level="INFO",
     ) -> None:
-        """Constructor
+        """SC Explorer CLI
 
         Args:
             nfc (bool, optional): Use NFC reader. Defaults to False.
