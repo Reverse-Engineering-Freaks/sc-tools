@@ -31,9 +31,15 @@ FLAGS
     -r, --reader=READER
         Default: 0
         Reader descriptor. Reader name or index in list. Defaults to 0.
-    -a, --allow_extended_apdu=ALLOW_EXTENDED_APDU
+    --auto_get_response=AUTO_GET_RESPONSE
+        Default: True
+        Enable automatic getting remaining response data. Defaults to True.
+    --allow_extended_apdu=ALLOW_EXTENDED_APDU
         Default: False
-        Allow Extended APDU
+        Allow Extended APDU. Defaults to False.
+    -t, --transceive_log_dir=TRANSCEIVE_LOG_DIR
+        Default: './transceive_logs/'
+        Transceive log directory path. Defaults to "./transceive_logs/".
     -l, --log_level=LOG_LEVEL
         Default: 'INFO'
         Log level. Defaults to "INFO". {CRITICAL|FATAL|ERROR|WARN|WARNING|INFO|DEBUG|NOTSET}
@@ -77,6 +83,9 @@ dump_response
 get_data
     GET DATA
 
+get_response
+    GET RESPONSE
+
 jpki_sign
     JPKI Sign (PERFORM SECURITY OPERATION)
 
@@ -118,7 +127,6 @@ verify
 
 ```
 $ sc-explorer - select-df \"D392F000260100000001\" - select-ef \"0002\" - read-binary
-SW: 0x6B00 (OFFSET_SPECIFIED_OUT_OF_THE_EF_RANGE)
 Data:
 0x00000000    30 82 05 14 30 82 03 FC A0 03 02 01 02 02 04 06    0...0...........
 0x00000010    7C 6A 21 30 0D 06 09 2A 86 48 86 F7 0D 01 01 0B    |j!0...*.H......
@@ -139,6 +147,7 @@ Data:
 0x00000100    73 69 67 6E 61 74 75 72 65 31 3D 30 3B 06 03 55    signature1=0;..U
 (Omitted)
 0x00000760    00 00 00 00 00 00 00 00 00 00 00 00                ............
+SW: 0x9000 (NORMAL_END)
 ```
 
 ## Authors
