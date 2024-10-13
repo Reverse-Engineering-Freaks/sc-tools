@@ -440,8 +440,8 @@ def list_do(
                 found_callback(tag_bytes, True, data)
 
     # Normal encoding
-    for tag_class in tqdm(range(0x00, 0x08), desc="List Data Object (Normal encoding; Tag class part)"):
-        for tag_number in tqdm(range(0x01, 0x7F), desc="List Data Object (Normal encoding; Tag number part)"):
+    for tag_class in tqdm(range(0x00, 0x08), desc="List Data Object (Normal encoding)"):
+        for tag_number in range(0x01, 0x7F):
             if tag_number < 0x1F:
                 tag = tag_class << 5 | tag_number
                 tag_bytes = tag.to_bytes(length=1)
