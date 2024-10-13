@@ -184,20 +184,14 @@ class ScExplorerCli:
         if self.__connection.last_response_status is None:
             return "No response yet."
         else:
-            response_data = (
-                self.__connection.last_response_data
-                + self.__connection.last_response_status.sw.to_bytes(
-                    length=2, byteorder="big"
-                )
-            )
-            response_data_dump = dump_binary(response_data)
+            response_data_dump = dump_binary(self.__connection.last_response_data)
             sw_hex = format(self.__connection.last_response_status.sw, "04X")
             response_status_type = (
                 self.__connection.last_response_status.status_type().name
             )
             message = """
                 {response_data_dump}
-                SW: 0x{sw_hex} ({response_status_type})
+                Last SW: 0x{sw_hex} ({response_status_type})
             """
             return (
                 dedent(message)
