@@ -419,22 +419,6 @@ def list_do(
 
     do_list: list[tuple[bytes, bool]] = []
 
-    # 1 byte tag
-    for tag in tqdm(range(0x01, 0xFF), desc="List Data Object (1 byte tag)"):
-        tag_bytes = tag.to_bytes(length=1)
-        data, status = connection.get_data(tag_bytes, cla=cla, raise_error=False)
-        if not status.is_cla_ins_valid():
-            raise RuntimeError("Cannot list DO in current DF.")
-        status_type = status.status_type()
-        if (
-            status_type == CardResponseStatusType.NORMAL_END
-            or status_type == CardResponseStatusType.INCORRECT_LC_LE_FIELD
-        ):
-            tqdm.write(f"Data Object {tag_bytes.hex().upper()} (1 byte tag) found.")
-            do_list.append((tag_bytes, False))
-            if found_callback is not None:
-                found_callback(tag_bytes, False, data)
-
     # Simplified encoding
     for tag in tqdm(range(0x01, 0xFF), desc="List Data Object (Simplified encoding)"):
         tag_bytes = tag.to_bytes(length=1)
@@ -455,21 +439,29 @@ def list_do(
             if found_callback is not None:
                 found_callback(tag_bytes, True, data)
 
-    # 2 byte tag
-    for tag in tqdm(range(0x1F1F, 0x10000), desc="List Data Object (2 byte tag)"):
-        tag_bytes = tag.to_bytes(length=2, byteorder="big")
-        data, status = connection.get_data(tag_bytes, cla=cla, raise_error=False)
-        if not status.is_cla_ins_valid():
-            raise RuntimeError("Cannot list DO in current DF.")
-        status_type = status.status_type()
-        if (
-            status_type == CardResponseStatusType.NORMAL_END
-            or status_type == CardResponseStatusType.INCORRECT_LC_LE_FIELD
-        ):
-            tqdm.write(f"Data Object {tag_bytes.hex().upper()} (2 byte tag) found.")
-            do_list.append((tag_bytes, False))
-            if found_callback is not None:
-                found_callback(tag_bytes, False, data)
+    # Normal encoding
+    for tag_class in tqdm(range(0x00, 0x08), desc="List Data Object (Normal encoding; Tag class part)"):
+        for tag_number in tqdm(range(0x01, 0x7F), desc="List Data Object (Normal encoding; Tag number part)"):
+            if tag_number < 0x1F:
+                tag = tag_class << 5 | tag_number
+                tag_bytes = tag.to_bytes(length=1)
+            else:
+                tag = (tag_class << 5 | 0x1F) << 8 | tag_number
+                tag_bytes = tag.to_bytes(length=2, byteorder="big")
+            data, status = connection.get_data(tag_bytes, cla=cla, raise_error=False)
+            if not status.is_cla_ins_valid():
+                raise RuntimeError("Cannot list DO in current DF.")
+            status_type = status.status_type()
+            if (
+                status_type == CardResponseStatusType.NORMAL_END
+                or status_type == CardResponseStatusType.INCORRECT_LC_LE_FIELD
+            ):
+                tqdm.write(
+                    f"Data Object {tag_bytes.hex().upper()} (Normal encoding) found."
+                )
+                do_list.append((tag_bytes, False))
+                if found_callback is not None:
+                    found_callback(tag_bytes, False, data)
 
     return do_list
 
