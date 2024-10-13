@@ -515,29 +515,32 @@ class CardConnection:
         """
         if cla < 0x00 or 0xFF < cla:
             raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
-        # if simplified_encoding:
-        #     if len(tag) != 1:
-        #         raise ValueError(
-        #             "Argument `tag` length must be 1 for simplified encoding."
-        #         )
-        #     if tag[0] < 0x01 or 0xFE < tag[0]:
-        #         raise ValueError(
-        #             "Argument `tag[0]` out of range. (0x01 <= tag[0] <= 0xFE)"
-        #         )
-        # else:
-        #     if len(tag) == 1:
-        #         if tag[0] < 0x01 or 0xFE < tag[0]:
-        #             raise ValueError(
-        #                 "Argument `tag[0]` out of range. (0x01 <= tag[0] <= 0xFE)"
-        #             )
-        #     elif len(tag) == 2:
-        #         tag_int = tag[0] << 8 | tag[1]
-        #         if tag_int < 0x1F1F or 0xFFFF < tag_int:
-        #             raise ValueError(
-        #                 "Argument `tag` out of range. (0x1F1F <= tag <= 0xFFFF)"
-        #             )
-        #     else:
-        #         raise ValueError("Argument `tag` length must be 1 or 2.")
+        if simplified_encoding:
+            if len(tag) != 1:
+                raise ValueError(
+                    "Argument `tag` length must be 1 for simplified encoding."
+                )
+            if tag[0] < 0x01 or 0xFE < tag[0]:
+                raise ValueError(
+                    "Argument `tag[0]` out of range. (0x01 <= tag[0] <= 0xFE)"
+                )
+        else:
+            if len(tag) == 1:
+                if tag[0] & 0x1F == 0x1F:
+                    raise ValueError("Argument `tag[0]` & 0x1F must not be 0x1F.")
+                if tag[0] & 0x1F < 0x00 or 0x1E < tag[0] & 0x1F:
+                    raise ValueError(
+                        "Argument `tag[0]` out of range. (0x00 <= tag[0] & 0x1F <= 0x1E)"
+                    )
+            elif len(tag) == 2:
+                if tag[0] & 0x1F != 0x1F:
+                    raise ValueError("Argument `tag[0]` & 0x1F must be 0x1F.")
+                if tag[1] < 0x1F or 0x7F < tag[1]:
+                    raise ValueError(
+                        "Argument `tag[1]` out of range. (0x1F <= tag <= 0x7F)"
+                    )
+            else:
+                raise ValueError("Argument `tag` length must be 1 or 2.")
 
         if simplified_encoding:
             command = CommandApdu(
