@@ -112,7 +112,7 @@ class CardResponseStatus:
             ValueError: The error is not 0x63XX
 
         Returns:
-            int | None: If int that verification remaining, else verification unlimited
+            int | None: If int that verification remaining count, else verification unlimited
         """
 
         if self.sw & 0xFF00 != 0x6300:
@@ -143,7 +143,7 @@ class CardResponseStatus:
         """Is P1-P2 valid
 
         Returns:
-            bool: True if CLA-INS and P1-P2 valid, else True
+            bool: True if CLA-INS and P1-P2 valid, else False
         """
 
         status_type = self.status_type()
@@ -158,7 +158,7 @@ class CardResponseStatus:
         """Is Lc-Le valid
 
         Returns:
-            bool: True if CLA-INS, P1-P2 and Le-Le valid, else True
+            bool: True if CLA-INS, P1-P2 and Le-Le valid, else False
         """
 
         status_type = self.status_type()
