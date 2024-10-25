@@ -120,7 +120,10 @@ class ScExplorerCli:
             )
         else:
             connection = connect_with_contact(reader)
-            self.__logger.info("Connected to card.")
+            atr = connection.getATR()
+            self.__logger.info(
+                f'Connected to card. atr=`{bytearray(atr).hex(" ").upper()}`'
+            )
 
         self.__connection = create_card_connection(
             connection,
