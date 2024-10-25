@@ -685,6 +685,42 @@ class ScExplorerCli:
 
         return self
 
+    def auto_explore(
+        self,
+        cla=0x00,
+        dump_dir=None,
+    ) -> Self:
+        """Auto Explore (Experimental)
+
+        Args:
+            cla (hexadecimal, optional): CLA. Defaults to 0x00.
+            dump_dir (_type_, optional): Response data dumping directory path. Defaults to None.
+
+        Raises:
+            ValueError: Invalid argument `cla`
+
+        Returns:
+            Self: This instance
+        """
+
+        if not isinstance(cla, int):
+            raise ValueError("Argument `cla` must be int.")
+
+        df_list = search_df(self.__connection, cla=cla)
+        for df_id in df_list:
+            print(f"DF 0x{df_id.hex().upper()} selected.")
+            self.__connection.select_df(df_id, cla=cla, fci="first")
+            try:
+                self.list_do(cla=cla, dump_dir=dump_dir)
+            except:
+                pass
+            try:
+                self.list_ef(cla=cla, dump_dir=dump_dir)
+            except:
+                pass
+
+        return self
+
 
 def main():
     fire.Fire(ScExplorerCli)
