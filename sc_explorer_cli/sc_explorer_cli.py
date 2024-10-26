@@ -697,7 +697,7 @@ class ScExplorerCli:
 
         Args:
             cla (hexadecimal, optional): CLA. Defaults to 0x00.
-            dump_dir (_type_, optional): Response data dumping directory path. Defaults to None.
+            dump_dir (str | None, optional): Response data dumping directory path. Defaults to None.
 
         Raises:
             ValueError: Invalid argument `cla`
