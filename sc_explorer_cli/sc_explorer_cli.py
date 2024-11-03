@@ -450,7 +450,12 @@ class ScExplorerCli:
         return self
 
     def list_cla_ins(
-        self, cla_start=0x00, cla_end=0x100, ins_start=0x00, ins_end=0x100
+        self,
+        cla_start=0x00,
+        cla_end=0x100,
+        ins_start=0x00,
+        ins_end=0x100,
+        agressive=False,
     ) -> Self:
         """List valid CLA-INS
 
@@ -459,12 +464,14 @@ class ScExplorerCli:
             cla_end (int, optional): CLA end. Defaults to 0x100.
             ins_start (int, optional): INS start. Defaults to 0x00.
             ins_end (int, optional): INS end. Defaults to 0x100.
+            agressive (bool, optional) Agressive. (Try with data.) Defaults to False.
 
         Raises:
             ValueError: Invalid arguemnt `cla_start`
             ValueError: Invalid arguemnt `cla_end`
             ValueError: Invalid arguemnt `ins_start`
             ValueError: Invalid arguemnt `ins_end`
+            ValueError: Invalid arguemnt `agressive`
 
         Returns:
             Self: This instance
@@ -478,8 +485,12 @@ class ScExplorerCli:
             raise ValueError("Argument `ins_start` must be int.")
         if not isinstance(ins_end, int):
             raise ValueError("Argument `ins_end` must be int.")
+        if not isinstance(agressive, bool):
+            raise ValueError("Argument `agressive` must be bool.")
 
-        list_cla_ins(self.__connection, cla_start, cla_end, ins_start, ins_end)
+        list_cla_ins(
+            self.__connection, cla_start, cla_end, ins_start, ins_end, agressive
+        )
 
         return self
 

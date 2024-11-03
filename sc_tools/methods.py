@@ -5,12 +5,15 @@ import csv
 from enum import Flag
 from importlib.resources import files
 from iso3166 import Country, countries
+import itertools
 from tqdm import tqdm
-from typing import Callable
+from typing import Callable, Literal
 
 from .apdu import CommandApdu
 from .card_response import CardResponseStatusType, CardResponseStatus, CardResponseError
 from .card_connection import CardConnection
+
+TestClaInsError = Literal["cla_invalid", "ins_invalid"]
 
 
 class CardFileAttribute(Flag):
@@ -26,12 +29,57 @@ class CardFileAttribute(Flag):
     JPKI_SIGN_PRIVATE_KEY = 0x00001000
 
 
+def __test_cla_ins(
+    connection: CardConnection, cla: int, ins: int, agressive: bool
+) -> CardResponseStatus | TestClaInsError:
+    cla_ins_valid = False
+    # No Data, No Le
+    command = CommandApdu(cla, ins, 0x00, 0x00, extended=connection.allow_extended_apdu)
+    data, status = connection.transmit(command.to_bytes(), raise_error=False)
+    if not status.is_cla_valid():
+        return "cla_invalid"
+    if status.is_cla_ins_valid():
+        cla_ins_valid = True
+    if status.sw == 0x9000:
+        return status
+    # No Data, Le="max"
+    command.le = "max"
+    data, status = connection.transmit(command.to_bytes(), raise_error=False)
+    if status.is_cla_ins_valid():
+        cla_ins_valid = True
+    if status.sw == 0x9000:
+        return status
+
+    if not agressive:
+        if cla_ins_valid:
+            return status
+        return "ins_invalid"
+
+    # With Data, No Le
+    command.data = b"\x00"
+    command.le = 0x00
+    data, status = connection.transmit(command.to_bytes(), raise_error=False)
+    if status.is_cla_ins_valid():
+        cla_ins_valid = True
+    if status.sw == 0x9000:
+        return status
+    # With Data, Le="max"
+    command.le = "max"
+    data, status = connection.transmit(command.to_bytes(), raise_error=False)
+    if status.is_cla_ins_valid():
+        cla_ins_valid = True
+    if cla_ins_valid:
+        return status
+    return "ins_invalid"
+
+
 def list_cla_ins(
     connection: CardConnection,
     cla_start: int = 0x00,
     cla_end: int = 0x100,
     ins_start: int = 0x00,
     ins_end: int = 0x100,
+    agressive: bool = False,
 ) -> list[tuple[int, int, CardResponseStatusType]]:
     """List valid CLA-INS
 
@@ -41,6 +89,7 @@ def list_cla_ins(
         cla_end (int, optional): CLA end. Defaults to 0x100.
         ins_start (int, optional): INS start. Defaults to 0x00.
         ins_end (int, optional): INS end. Defaults to 0x100.
+        agressive (bool, optional) Agressive. (Try with data.) Defaults to False.
 
     Raises:
         ValueError: Invalid argument `cla_start`
@@ -68,33 +117,19 @@ def list_cla_ins(
     cla_ins_list: list[tuple[int, int, CardResponseStatusType]] = []
     for cla in tqdm(range(cla_start, cla_end), desc="List valid CLA-INS"):
         for ins in range(ins_start, ins_end):
+            result = __test_cla_ins(connection, cla, ins, agressive)
+            if result == "cla_invalid":
+                break
+            if result == "ins_invalid":
+                continue
             cla_hex = format(cla, "02X")
             ins_hex = format(ins, "02X")
-            # No Le
-            command = CommandApdu(
-                cla, ins, 0x00, 0x00, extended=connection.allow_extended_apdu
-            )
-            data, status = connection.transmit(command.to_bytes(), raise_error=False)
-            if not status.is_cla_valid():
-                break
-            if not status.is_cla_ins_valid():
-                continue
-            status_type = status.status_type()
-            if (
-                status_type == CardResponseStatusType.INCORRECT_LC_LE_FIELD
-                or status_type == CardResponseStatusType.LC_VALUE_CONFLICTING_P1_P2
-            ):
-                # Le=MAX
-                command.le = "max"
-                data, status = connection.transmit(
-                    command.to_bytes(), raise_error=False
-                )
-            sw_hex = format(status.sw, "04X")
-            status_type = status.status_type()
+            sw_hex = format(result.sw, "04X")
+            status_type = result.status_type()
             tqdm.write(
                 f"CLA {cla_hex}, INS {ins_hex} found with status {sw_hex} ({status_type.name})."
             )
-            cla_ins_list.append((cla, ins, status))
+            cla_ins_list.append((cla, ins, result))
 
     return cla_ins_list
 
