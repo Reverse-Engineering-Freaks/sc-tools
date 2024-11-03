@@ -5,7 +5,7 @@ from nfc.tag.tt4 import Type4Tag
 from smartcard.CardConnection import CardConnection as PyscardCardConnection
 from typing import Callable, Literal
 
-from .apdu import max_lc_le, CommandApdu
+from .apdu import CommandApdu
 from .card_response import CardResponseStatusType, CardResponseStatus, CardResponseError
 
 
@@ -145,7 +145,7 @@ class CardConnection:
             offset >> 8,
             offset & 0xFF,
             le=limit,
-            extended=self.allow_extended_apdu,
+            extended="allow" if self.allow_extended_apdu else False,
         )
         return self.transmit(command.to_bytes(), raise_error=raise_error)
 
@@ -171,10 +171,9 @@ class CardConnection:
         if cla < 0x00 or 0xFF < cla:
             raise ValueError("Argument `cla` out of range. (0x00 <= cla <= 0xFF)")
 
-        max_bulk_read_length = max_lc_le(self.allow_extended_apdu)
         data, status = self.read_binary(cla=cla, offset=0x0000, raise_error=raise_error)
         chunk_data = data
-        while len(chunk_data) == max_bulk_read_length:
+        while True:
             offset = len(data)
             chunk_data, status = self.read_binary(
                 cla=cla, offset=offset, raise_error=False
@@ -226,7 +225,7 @@ class CardConnection:
             record_number,
             0x04,
             le=limit,
-            extended=self.allow_extended_apdu,
+            extended="allow" if self.allow_extended_apdu else False,
         )
         return self.transmit(command.to_bytes(), raise_error=raise_error)
 
@@ -457,7 +456,7 @@ class CardConnection:
             0x00,
             0x00,
             le=limit,
-            extended=self.allow_extended_apdu,
+            extended="allow" if self.allow_extended_apdu else False,
         )
         return self.transmit(
             command.to_bytes(), disable_get_response=True, raise_error=raise_error
@@ -549,7 +548,7 @@ class CardConnection:
                 0x02,
                 tag[0],
                 le="max",
-                extended=self.allow_extended_apdu,
+                extended="allow" if self.allow_extended_apdu else False,
             )
         else:
             if len(tag) == 1:
@@ -559,7 +558,7 @@ class CardConnection:
                     0x00,
                     tag[0],
                     le="max",
-                    extended=self.allow_extended_apdu,
+                    extended="allow" if self.allow_extended_apdu else False,
                 )
             else:
                 command = CommandApdu(
@@ -568,7 +567,7 @@ class CardConnection:
                     tag[0],
                     tag[1],
                     le="max",
-                    extended=self.allow_extended_apdu,
+                    extended="allow" if self.allow_extended_apdu else False,
                 )
         return self.transmit(command.to_bytes(), raise_error=raise_error)
 
@@ -588,7 +587,7 @@ class CardConnection:
         """
 
         command = CommandApdu(
-            0x80, 0x2A, 0x00, 0x80, data=input, le="max", extended=False
+            0x80, 0x2A, 0x01, 0x9A, data=input, le="max", extended=False
         )
         return self.transmit(command.to_bytes(), raise_error=raise_error)
 
