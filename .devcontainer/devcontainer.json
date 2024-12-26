@@ -3,11 +3,10 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "workspaceFolder": "/home/python/workspace/",
+  "workspaceFolder": "/workspace/",
   "remoteUser": "python",
   "mounts": [
-    "source=${localWorkspaceFolder},target=/home/python/workspace/,type=bind,consistency=cached",
-    "source=${env:HOME}/.ssh/config,target=/home/python/.ssh/config,type=bind,consistency=cached,readonly",
+    "source=${localWorkspaceFolder},target=/workspace/,type=bind,consistency=cached",
     "source=/run/,target=/run/,type=bind",
     "source=/dev/bus/usb/,target=/dev/bus/usb/,type=bind"
   ],
