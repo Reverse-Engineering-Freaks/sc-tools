@@ -11,19 +11,19 @@ packages = [
 ]
 
 [tool.poetry.scripts]
-sc-explorer = "sc_explorer_cli.sc_explorer_cli:main"
+sc-explorer = "sc_explorer_cli.cli:main"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = "^3.13"
 ber-tlv = "^0.0.6"
-fire = "^0.6.0"
+fire = "^0.7.0"
 iso3166 = "^2.1.1"
 nfcpy = "^1.0.4"
-pyscard = "^2.1.1"
-tqdm = "^4.66.5"
+pyscard = "^2.2.0"
+tqdm = "^4.67.1"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.4.0"
+black = "^24.10.0"
 
 [build-system]
 requires = ["poetry-core"]
