@@ -14,6 +14,7 @@ from .card_response import CardResponseStatusType, CardResponseStatus, CardRespo
 from .card_connection import CardConnection
 
 TestClaInsError = Literal["cla_invalid", "ins_invalid"]
+TestP1P2Error = Literal["p1_p2_invalid"]
 
 
 class CardFileAttribute(Flag):
@@ -134,6 +135,44 @@ def list_cla_ins(
     return cla_ins_list
 
 
+def __test_p1_p2(
+    connection: CardConnection, cla: int, ins: int, p1: int, p2: int, test_data: bytes
+) -> CardResponseStatus | TestP1P2Error:
+    p1_p2_valid = False
+    # No Data, No Le
+    command = CommandApdu(cla, ins, p1, p2, extended=connection.allow_extended_apdu)
+    data, status = connection.transmit(command.to_bytes(), raise_error=False)
+    if not status.is_p1_p2_valid():
+        return "p1_p2_invalid"
+    if status.sw == 0x9000:
+        return status
+    # No Data, Le="max"
+    command.le = "max"
+    data, status = connection.transmit(command.to_bytes(), raise_error=False)
+    if not status.is_p1_p2_valid():
+        return "p1_p2_invalid"
+    if status.sw == 0x9000:
+        return status
+
+    if data is None:
+        return status
+
+    # With Data, No Le
+    command.data = test_data
+    command.le = 0x00
+    data, status = connection.transmit(command.to_bytes(), raise_error=False)
+    if not status.is_p1_p2_valid():
+        return "p1_p2_invalid"
+    if status.sw == 0x9000:
+        return status
+    # With Data, Le="max"
+    command.le = "max"
+    data, status = connection.transmit(command.to_bytes(), raise_error=False)
+    if not status.is_p1_p2_valid():
+        return "p1_p2_invalid"
+    return status
+
+
 def list_p1_p2(
     connection: CardConnection,
     cla: int,
@@ -150,6 +189,7 @@ def list_p1_p2(
         connection (CardConnection): Card Connection
         cla (int): CLA
         ins (int): INS
+        data (bytes): Data (Agressive)
         p1_start (int, optional): P1 start. Defaults to 0x00.
         p1_end (int, optional): P1 end. Defaults to 0x100.
         p2_start (int, optional): P2 start. Defaults to 0x00.
@@ -187,85 +227,16 @@ def list_p1_p2(
     p1_p2_list: list[tuple[bytes, CardResponseStatusType]] = []
     for p1 in tqdm(range(p1_start, p1_end), desc="List valid P1-P2"):
         for p2 in range(p2_start, p2_end):
+            result = __test_p1_p2(connection, cla, ins, p1, p2, data)
+            if result == "p1_p2_invalid":
+                continue
             p1_hex = format(p1, "02X")
             p2_hex = format(p2, "02X")
-            # No Data, No Le
-            command = CommandApdu(
-                cla, ins, p1, p2, extended=connection.allow_extended_apdu
+            sw_hex = format(result.sw, "04X")
+            status_type = result.status_type()
+            tqdm.write(
+                f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
             )
-            response_data, status = connection.transmit(
-                command.to_bytes(), raise_error=False
-            )
-            if not status.is_cla_ins_valid():
-                # raise RuntimeError("Invalid CLA-INS.")
-                continue
-            valid_p1_p2_detected_status = None
-            if status.is_p1_p2_valid():
-                valid_p1_p2_detected_status = status
-            if status.is_lc_le_valid():
-                status_type = status.status_type()
-                sw_hex = format(status.sw, "04X")
-                tqdm.write(
-                    f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
-                )
-                p1_p2_list.append((p1, p2, status))
-                continue
-            # Data, No Le
-            command.data = data
-            command.le = 0
-            response_data, status = connection.transmit(
-                command.to_bytes(), raise_error=False
-            )
-            if status.is_p1_p2_valid():
-                valid_p1_p2_detected_status = status
-            if status.is_lc_le_valid():
-                status_type = status.status_type()
-                sw_hex = format(status.sw, "04X")
-                tqdm.write(
-                    f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
-                )
-                p1_p2_list.append((p1, p2, status))
-                continue
-            # No Data, Le=MAX
-            command.data = None
-            command.le = "max"
-            response_data, status = connection.transmit(
-                command.to_bytes(), raise_error=False
-            )
-            if status.is_p1_p2_valid():
-                valid_p1_p2_detected_status = status
-            if status.is_lc_le_valid():
-                status_type = status.status_type()
-                sw_hex = format(status.sw, "04X")
-                tqdm.write(
-                    f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
-                )
-                p1_p2_list.append((p1, p2, status))
-                continue
-            # Data, Le=MAX
-            command.data = data
-            command.le = "max"
-            response_data, status = connection.transmit(
-                command.to_bytes(), raise_error=False
-            )
-            if status.is_p1_p2_valid():
-                valid_p1_p2_detected_status = status
-            if status.is_lc_le_valid():
-                status_type = status.status_type()
-                sw_hex = format(status.sw, "04X")
-                tqdm.write(
-                    f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
-                )
-                p1_p2_list.append((p1, p2, status))
-                continue
-            if valid_p1_p2_detected_status is not None:
-                status_type = valid_p1_p2_detected_status.status_type()
-                sw_hex = format(valid_p1_p2_detected_status.sw, "04X")
-                tqdm.write(
-                    f"P1 {p1_hex}, P2 {p2_hex} found with status {sw_hex} ({status_type.name})."
-                )
-                p1_p2_list.append((p1, p2, status))
-                continue
     return p1_p2_list
 
 
