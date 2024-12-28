@@ -1,5 +1,5 @@
 {
-  "name": "Dev Container",
+  "name": "sc-tools",
   "build": {
     "dockerfile": "Dockerfile"
   },
@@ -10,16 +10,15 @@
     "source=/run/,target=/run/,type=bind",
     "source=/dev/bus/usb/,target=/dev/bus/usb/,type=bind"
   ],
-  "runArgs": [
-    "--device-cgroup-rule=a *:* mrw"
-  ],
+  "runArgs": ["--device-cgroup-rule=a *:* mrw"],
   "onCreateCommand": ".devcontainer/on_create.sh",
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-python.black-formatter",
-        "njpwerner.autodocstring"
+        "njpwerner.autodocstring",
+        "esbenp.prettier-vscode"
       ]
     }
   }
